@@ -126,7 +126,7 @@ export const login = async (req, res) => {
 export const getMe = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, name, email, phone, role, status, joined_at, is_reseller, wallet_balance, addresses FROM users WHERE id = $1",
+      "SELECT id, name, email, phone, role, status, joined_at, is_reseller, wallet_balance, addresses, reseller_code FROM users WHERE id = $1",
       [req.user.id]
     );
     if (result.rows.length === 0) {
@@ -142,7 +142,7 @@ export const getMe = async (req, res) => {
 export const enableResellerMode = async (req, res) => {
   try {
     const result = await pool.query(
-      "UPDATE users SET is_reseller = TRUE WHERE id = $1 RETURNING id, name, email, phone, role, status, joined_at, is_reseller, wallet_balance",
+      "UPDATE users SET is_reseller = TRUE, reseller_code = COALESCE(reseller_code, 'RS' || id) WHERE id = $1 RETURNING id, name, email, phone, role, status, joined_at, is_reseller, wallet_balance, reseller_code",
       [req.user.id]
     );
     if (result.rows.length === 0) {

@@ -208,8 +208,13 @@ const Checkout = () => {
         return;
       }
 
-      // Find the reseller ID and sum commission
-      const resellerId = items.find((i) => i.reseller_id)?.reseller_id;
+      // Find the reseller ID and sum commission (if any from legacy logic)
+      const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+      };
+      const resellerCode = getCookie('pantix_ref');
       const resellerCommission = items.reduce(
         (s, i) => s + (i.reseller_margin ? Number(i.reseller_margin) * i.qty : 0),
         0
@@ -237,7 +242,7 @@ const Checkout = () => {
           total,
           payment: payment === "online" ? "Online" : "COD",
           address,
-          reseller_id: resellerId ? Number(resellerId) : null,
+          reseller_code: resellerCode || null,
           reseller_commission: resellerCommission || 0,
         }),
       });

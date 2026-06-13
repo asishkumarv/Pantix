@@ -276,9 +276,24 @@ export const updateWithdrawalStatus = async (req, res) => {
 
 export const getMyReferrals = async (req, res) => {
   const userId = req.user.id;
+  const { filter } = req.query; // 'today', 'yesterday', '7days', '30days', 'all'
   try {
+    let dateFilter = "";
+    if (filter === "today") {
+      dateFilter = "AND created_at >= date_trunc('day', NOW())";
+    } else if (filter === "yesterday") {
+      dateFilter = "AND created_at >= date_trunc('day', NOW() - interval '1 day') AND created_at < date_trunc('day', NOW())";
+    } else if (filter === "7days") {
+      dateFilter = "AND created_at >= NOW() - interval '7 days'";
+    } else if (filter === "30days") {
+      dateFilter = "AND created_at >= NOW() - interval '30 days'";
+    }
+
     const result = await pool.query(
-      "SELECT id, total, status, date, reseller_commission FROM orders WHERE reseller_id = $1 ORDER BY date DESC",
+      `SELECT id, order_id, product_name, commission_amount, status, created_at as date 
+       FROM order_commissions 
+       WHERE reseller_id = $1 ${dateFilter} 
+       ORDER BY created_at DESC`,
       [userId]
     );
     res.json(result.rows);
@@ -287,28 +302,34 @@ export const getMyReferrals = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
 export const getMyStats = async (req, res) => {
   const userId = req.user.id;
   try {
     // Total lifetime earnings from referrals
     const totalRes = await pool.query(
       `SELECT 
-         COALESCE(SUM(reseller_commission), 0) AS total_earnings,
-         COUNT(*) AS total_referrals
-       FROM orders 
-       WHERE reseller_id = $1`,
+         COALESCE(SUM(commission_amount), 0) AS total_earnings,
+         COUNT(DISTINCT order_id) AS total_referrals
+       FROM order_commissions 
+       WHERE reseller_id = $1 AND status = 'Approved'`,
       [userId]
     );
 
     // Earnings & referrals this month
     const monthRes = await pool.query(
       `SELECT 
-         COALESCE(SUM(reseller_commission), 0) AS monthly_earnings,
-         COUNT(*) AS monthly_referrals
-       FROM orders 
+         COALESCE(SUM(commission_amount), 0) AS monthly_earnings,
+         COUNT(DISTINCT order_id) AS monthly_referrals
+       FROM order_commissions 
        WHERE reseller_id = $1
-         AND date >= date_trunc('month', NOW())`,
+         AND status = 'Approved'
+         AND created_at >= date_trunc('month', NOW())`,
+      [userId]
+    );
+
+    // Total clicks
+    const clicksRes = await pool.query(
+      `SELECT COUNT(*) as total_clicks FROM reseller_clicks WHERE reseller_id = $1`,
       [userId]
     );
 
@@ -349,9 +370,34 @@ export const getMyStats = async (req, res) => {
       totalReferrals,
       monthlyEarnings,
       monthlyReferrals,
+      totalClicks: parseInt(clicksRes.rows[0].total_clicks) || 0,
     });
   } catch (err) {
     console.error("GetMyStats error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const trackClick = async (req, res) => {
+  const { reseller_code, product_id } = req.body;
+  if (!reseller_code || !product_id) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
+
+  try {
+    const userRes = await pool.query("SELECT id FROM users WHERE reseller_code = $1", [reseller_code]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: "Reseller not found" });
+    }
+    
+    const reseller_id = userRes.rows[0].id;
+    await pool.query(
+      "INSERT INTO reseller_clicks (reseller_id, product_id) VALUES ($1, $2)",
+      [reseller_id, product_id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("TrackClick error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 };

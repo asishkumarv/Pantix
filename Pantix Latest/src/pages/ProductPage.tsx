@@ -162,6 +162,21 @@ const ProductPage = () => {
     fetchReviews();
   }, [id]);
 
+  // Handle Referral tracking
+  useEffect(() => {
+    if (refId && product) {
+      // Save ref to cookie for 30 days
+      document.cookie = `pantix_ref=${refId}; max-age=${30 * 24 * 60 * 60}; path=/`;
+      
+      // Track the click in backend
+      fetch(`${API_URL}/api/resellers/click`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reseller_code: refId, product_id: product.id })
+      }).catch(() => {});
+    }
+  }, [refId, product]);
+
   if (isLoadingProducts) {
     return (
       <Layout>
@@ -322,14 +337,15 @@ const ProductPage = () => {
               <div className="flex items-center gap-1 md:gap-2 mt-1 md:mt-2">
                 <button
                   onClick={() => {
+                    const cleanUrl = `${window.location.origin}${window.location.pathname}`;
                     if (navigator.share) {
                       navigator.share({
                         title: product.name,
                         text: `Check out this ${product.name} at Pantix`,
-                        url: window.location.href,
+                        url: cleanUrl,
                       }).catch(() => {});
                     } else {
-                      navigator.clipboard.writeText(window.location.href);
+                      navigator.clipboard.writeText(cleanUrl);
                       toast.success("Link copied to clipboard! 🔗");
                     }
                   }}
@@ -448,7 +464,7 @@ const ProductPage = () => {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => {
-                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${user.id}&margin=${customMargin}`;
+                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${user.reseller_code}&margin=${customMargin}`;
                           const text = `Hey! Look at this gorgeous ${product.name} I curated for you at Pantix for just ${formatINR(product.price + customMargin)}! ✨ Check it out here: ${referralLink}`;
                           window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
                         }}
@@ -462,7 +478,7 @@ const ProductPage = () => {
 
                       <button
                         onClick={() => {
-                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${user.id}&margin=${customMargin}`;
+                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${user.reseller_code}&margin=${customMargin}`;
                           navigator.clipboard.writeText(referralLink);
                           toast.info("Instagram sharing works via DMs! Direct link copied to your clipboard. 💖");
                         }}
@@ -476,7 +492,7 @@ const ProductPage = () => {
 
                       <button
                         onClick={() => {
-                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${user.id}&margin=${customMargin}`;
+                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${user.reseller_code}&margin=${customMargin}`;
                           const text = `Take a look at the gorgeous ${product.name} at Pantix for only ${formatINR(product.price + customMargin)}!`;
                           window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(text)}`, "_blank");
                         }}
@@ -490,7 +506,7 @@ const ProductPage = () => {
 
                       <button
                         onClick={async () => {
-                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${user.id}&margin=${customMargin}`;
+                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${user.reseller_code}&margin=${customMargin}`;
                           try {
                             await navigator.clipboard.writeText(referralLink);
                             setCopied(true);

@@ -75,6 +75,7 @@ export const createProduct = async (req, res) => {
     status,
     is_budget,
     is_popular,
+    commission_rate,
   } = req.body;
 
   if (!id || !name || price === undefined || mrp === undefined) {
@@ -87,8 +88,8 @@ export const createProduct = async (req, res) => {
     const result = await pool.query(
       `INSERT INTO products (
         id, name, price, mrp, category, category_label, image, images, sizes,
-        description, in_stock, stock, badge, colors, sku, status, is_budget, is_popular
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        description, in_stock, stock, badge, colors, sku, status, is_budget, is_popular, commission_rate
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
       RETURNING *`,
       [
         id,
@@ -109,6 +110,7 @@ export const createProduct = async (req, res) => {
         status || "Active",
         is_budget === true || is_budget === "true" || is_budget === 1,
         is_popular === true || is_popular === "true" || is_popular === 1,
+        commission_rate !== undefined ? commission_rate : 0.00,
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -143,6 +145,7 @@ export const updateProduct = async (req, res) => {
     status,
     is_budget,
     is_popular,
+    commission_rate,
   } = req.body;
 
   try {
@@ -173,8 +176,9 @@ export const updateProduct = async (req, res) => {
         sku = $14,
         status = $15,
         is_budget = $16,
-        is_popular = $17
-      WHERE id = $18
+        is_popular = $17,
+        commission_rate = $18
+      WHERE id = $19
       RETURNING *`,
       [
         name !== undefined ? name : current.name,
@@ -194,6 +198,7 @@ export const updateProduct = async (req, res) => {
         status !== undefined ? status : current.status,
         is_budget !== undefined ? (is_budget === true || is_budget === "true" || is_budget === 1) : current.is_budget,
         is_popular !== undefined ? (is_popular === true || is_popular === "true" || is_popular === 1) : current.is_popular,
+        commission_rate !== undefined ? commission_rate : current.commission_rate,
         id,
       ]
     );

@@ -28,6 +28,7 @@ export default function AddProduct() {
   const [price, setPrice] = useState("");
   const [mrp, setMrp] = useState("");
   const [stock, setStock] = useState("");
+  const [commissionRate, setCommissionRate] = useState("0");
   const [active, setActive] = useState(true);
   const [isBudget, setIsBudget] = useState(false);
   const [isPopular, setIsPopular] = useState(false);
@@ -95,6 +96,7 @@ export default function AddProduct() {
       setPrice(product.price?.toString() || "");
       setMrp(product.mrp?.toString() || "");
       setStock(product.stock?.toString() || "");
+      setCommissionRate(product.commission_rate?.toString() || "0");
       setActive(product.status === "Active");
       setIsBudget(product.is_budget === true || product.is_budget === "true");
       setIsPopular(product.is_popular === true || product.is_popular === "true");
@@ -231,6 +233,7 @@ export default function AddProduct() {
         colors: validColors.length ? validColors : null,
         is_budget: isBudget,
         is_popular: isPopular,
+        commission_rate: Number(commissionRate),
       });
     } catch (err: any) {
       toast.error("Image upload failed", { description: err.message });
@@ -460,6 +463,10 @@ export default function AddProduct() {
               <div className="space-y-2">
                 <Label htmlFor="stock">Stock qty *</Label>
                 <Input id="stock" value={stock} onChange={(e) => setStock(e.target.value)} type="number" min="0" placeholder="12" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="commissionRate">Commission Rate (%)</Label>
+                <Input id="commissionRate" value={commissionRate} onChange={(e) => setCommissionRate(e.target.value)} type="number" min="0" max="100" step="0.01" placeholder="10" />
               </div>
             </div>
           </section>

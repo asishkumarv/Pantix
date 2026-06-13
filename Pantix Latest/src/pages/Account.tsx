@@ -14,7 +14,8 @@ import {
   Coins,
   TrendingUp,
   Wallet,
-  ArrowUpRight
+  ArrowUpRight,
+  Eye
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { useStore } from "@/lib/store";
@@ -432,6 +433,7 @@ function ResellerTab() {
   // Data states
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
+  const [referralFilter, setReferralFilter] = useState("all");
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [resellerStats, setResellerStats] = useState<{
     tier: string;
@@ -442,6 +444,7 @@ function ResellerTab() {
     totalReferrals: number;
     monthlyEarnings: number;
     monthlyReferrals: number;
+    totalClicks: number;
   } | null>(null);
 
   const fetchHistory = useCallback(async () => {
@@ -459,7 +462,7 @@ function ResellerTab() {
       }
 
       // Fetch referrals
-      const rRes = await fetch(`${API_URL}/api/resellers/referrals`, {
+      const rRes = await fetch(`${API_URL}/api/resellers/referrals?filter=${referralFilter}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (rRes.ok) {
@@ -487,7 +490,7 @@ function ResellerTab() {
     if (user?.is_reseller) {
       fetchHistory();
     }
-  }, [refreshUser, user?.is_reseller, fetchHistory]);
+  }, [refreshUser, user?.is_reseller, fetchHistory, referralFilter]);
 
   const handleActivate = async () => {
     setLoading(true);
@@ -678,17 +681,26 @@ function ResellerTab() {
         </div>
 
         {/* Mini stats — live from backend */}
-        <div className="grid gap-3">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-1">
+          <div className="p-4 border border-gold/15 bg-card/50 rounded-2xl flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gold/10 flex items-center justify-center text-gold">
+              <Eye className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Clicks</p>
+              <p className="text-base font-bold text-white">{resellerStats?.totalClicks ?? 0}</p>
+            </div>
+          </div>
           <div className="p-4 border border-gold/15 bg-card/50 rounded-2xl flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gold/10 flex items-center justify-center text-gold">
               <TrendingUp className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Referrals</p>
-              <p className="text-base font-bold text-white">{resellerStats?.totalReferrals ?? referrals.length} Orders</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Orders</p>
+              <p className="text-base font-bold text-white">{resellerStats?.totalReferrals ?? referrals.length}</p>
             </div>
           </div>
-          <div className="p-4 border border-gold/15 bg-card/50 rounded-2xl flex items-center gap-3">
+          <div className="p-4 border border-gold/15 bg-card/50 rounded-2xl flex items-center gap-3 sm:col-span-2 lg:col-span-1">
             <div className="w-9 h-9 rounded-xl bg-gold/10 flex items-center justify-center text-gold">
               <ArrowUpRight className="w-4 h-4" />
             </div>
@@ -702,33 +714,46 @@ function ResellerTab() {
 
       {/* Referrals ledger */}
       <div className="space-y-3">
-        <h3 className="font-display text-xl text-gold">Recent Referrals</h3>
+        <div className="flex justify-between items-center">
+          <h3 className="font-display text-xl text-gold">Recent Referrals</h3>
+          <select 
+            value={referralFilter} 
+            onChange={(e) => setReferralFilter(e.target.value)}
+            className="bg-card border border-gold/20 text-gold text-xs px-2 py-1 rounded focus:outline-none"
+          >
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="7days">Last 7 Days</option>
+            <option value="30days">Last 30 Days</option>
+          </select>
+        </div>
         {referrals.length === 0 ? (
           <div className="p-6 border border-gold/10 rounded-2xl bg-card/20 text-center text-xs text-muted-foreground">
             No referred purchases yet. Share your curated product links to start earning! ✨
           </div>
         ) : (
           <div className="border border-gold/15 bg-card/30 rounded-2xl overflow-hidden text-xs">
-            <div className="grid grid-cols-[1fr_80px_100px] p-3 bg-gold/5 font-semibold text-gold/80 border-b border-gold/15 uppercase tracking-wider text-[10px]">
-              <span>Ref Details</span>
-              <span>Commission</span>
+            <div className="grid grid-cols-[1fr_80px_80px] p-3 bg-gold/5 font-semibold text-gold/80 border-b border-gold/15 uppercase tracking-wider text-[10px]">
+              <span>Product & Order</span>
+              <span>Earned</span>
               <span className="text-right">Status</span>
             </div>
             {referrals.map((ref, i) => (
-              <div key={i} className="grid grid-cols-[1fr_80px_100px] p-3 border-b border-gold/10 items-center hover:bg-gold/5 transition">
+              <div key={i} className="grid grid-cols-[1fr_80px_80px] p-3 border-b border-gold/10 items-center hover:bg-gold/5 transition">
                 <div className="space-y-0.5">
-                  <p className="font-semibold text-white">Order #{ref.id.slice(0, 8)} · Curated purchase</p>
+                  <p className="font-semibold text-white line-clamp-1">{ref.product_name}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {new Date(ref.date).toLocaleDateString("en-IN", {
+                    Order #{ref.order_id} · {new Date(ref.date).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "short",
                       year: "numeric"
                     })}
                   </p>
                 </div>
-                <p className="font-bold text-gold">+₹{Number(ref.reseller_commission)}</p>
+                <p className="font-bold text-gold">+₹{Number(ref.commission_amount)}</p>
                 <span className={`text-right text-[10px] uppercase font-semibold tracking-wider ${
-                  ref.status === "Delivered" ? "text-emerald-bright" : "text-gold"
+                  ref.status === "Approved" ? "text-emerald-bright" : ref.status === "Pending" ? "text-gold" : ref.status === "Rejected" ? "text-destructive" : "text-muted-foreground"
                 }`}>
                   {ref.status}
                 </span>

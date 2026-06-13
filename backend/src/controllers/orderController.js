@@ -77,22 +77,32 @@ export const getOrderById = async (req, res) => {
 };
 
 export const createOrder = async (req, res) => {
-  const { items, total, payment, address, reseller_id, reseller_commission } = req.body;
+  const { items, total, payment, address, reseller_code } = req.body;
 
   if (!items || !total) {
     return res.status(400).json({ error: "Items and total are required" });
   }
 
-  // Generate a random order ID (e.g. PNX-1043)
-  const randNum = Math.floor(1000 + Math.random() * 9000);
-  const id = `PNX-${randNum}`;
-
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+
+    let reseller_id = null;
+    if (reseller_code) {
+      const resellerRes = await client.query("SELECT id FROM users WHERE reseller_code = $1 AND is_reseller = TRUE", [reseller_code]);
+      if (resellerRes.rows.length > 0) {
+        reseller_id = resellerRes.rows[0].id;
+      }
+    }
+
+    const randNum = Math.floor(1000 + Math.random() * 9000);
+    const id = `PNX-${randNum}`;
+
     let customer_name = req.user.name;
     const customer_email = req.user.email;
 
     if (!customer_name) {
-      const userRes = await pool.query("SELECT name FROM users WHERE email = $1", [customer_email]);
+      const userRes = await client.query("SELECT name FROM users WHERE email = $1", [customer_email]);
       if (userRes.rows.length > 0) {
         customer_name = userRes.rows[0].name;
       } else {
@@ -100,9 +110,9 @@ export const createOrder = async (req, res) => {
       }
     }
 
-    const result = await pool.query(
+    const result = await client.query(
       `INSERT INTO orders (id, customer_name, customer_email, total, status, payment, items, address, reseller_id, reseller_commission)
-       VALUES ($1, $2, $3, $4, 'Pending', $5, $6, $7, $8, $9)
+       VALUES ($1, $2, $3, $4, 'Pending', $5, $6, $7, $8, 0.00)
        RETURNING *`,
       [
         id,
@@ -112,23 +122,37 @@ export const createOrder = async (req, res) => {
         payment || "COD",
         JSON.stringify(items),
         address ? JSON.stringify(address) : null,
-        reseller_id || null,
-        reseller_commission || 0.00
+        reseller_id
       ]
     );
 
-    // Credit reseller commission instantly to their wallet balance
-    if (reseller_id && Number(reseller_commission) > 0) {
-      await pool.query(
-        "UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2",
-        [Number(reseller_commission), reseller_id]
-      );
+    if (reseller_id) {
+      for (const item of items) {
+        const prodRes = await client.query("SELECT commission_rate FROM products WHERE id = $1", [item.id]);
+        if (prodRes.rows.length > 0) {
+          const rate = parseFloat(prodRes.rows[0].commission_rate) || 0;
+          if (rate > 0) {
+            const amount = parseFloat(item.price) * parseInt(item.quantity || 1) * (rate / 100);
+            if (amount > 0) {
+              await client.query(
+                `INSERT INTO order_commissions (order_id, reseller_id, product_id, product_name, quantity, commission_amount, status)
+                 VALUES ($1, $2, $3, $4, $5, $6, 'Pending')`,
+                [id, reseller_id, item.id, item.name, item.quantity || 1, amount]
+              );
+            }
+          }
+        }
+      }
     }
 
+    await client.query('COMMIT');
     res.status(201).json(result.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error("CreateOrder error:", err);
     res.status(500).json({ error: "Internal server error" });
+  } finally {
+    client.release();
   }
 };
 
@@ -140,9 +164,13 @@ export const updateOrderStatus = async (req, res) => {
     return res.status(400).json({ error: "Status is required" });
   }
 
+  const client = await pool.connect();
   try {
-    const check = await pool.query("SELECT * FROM orders WHERE id = $1", [id]);
+    await client.query('BEGIN');
+    
+    const check = await client.query("SELECT * FROM orders WHERE id = $1", [id]);
     if (check.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: "Order not found" });
     }
 
@@ -157,10 +185,30 @@ export const updateOrderStatus = async (req, res) => {
     params.push(id);
     query += ` WHERE id = $${params.length} RETURNING *`;
 
-    const result = await pool.query(query, params);
+    const result = await client.query(query, params);
+
+    // Handle commission state changes based on order status
+    if (status === 'Delivered') {
+      const commRes = await client.query("UPDATE order_commissions SET status = 'Approved' WHERE order_id = $1 AND status = 'Pending' RETURNING reseller_id, commission_amount", [id]);
+      for (const row of commRes.rows) {
+        await client.query("UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2", [row.commission_amount, row.reseller_id]);
+      }
+    } else if (status === 'Cancelled') {
+      await client.query("UPDATE order_commissions SET status = 'Rejected' WHERE order_id = $1 AND status = 'Pending'", [id]);
+    } else if (status === 'Refunded') {
+      const commRes = await client.query("UPDATE order_commissions SET status = 'Reversed' WHERE order_id = $1 AND status = 'Approved' RETURNING reseller_id, commission_amount", [id]);
+      for (const row of commRes.rows) {
+        await client.query("UPDATE users SET wallet_balance = wallet_balance - $1 WHERE id = $2", [row.commission_amount, row.reseller_id]);
+      }
+    }
+
+    await client.query('COMMIT');
     res.json(result.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error("UpdateOrderStatus error:", err);
     res.status(500).json({ error: "Internal server error" });
+  } finally {
+    client.release();
   }
 };

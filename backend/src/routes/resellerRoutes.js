@@ -11,6 +11,7 @@ import {
   updateWithdrawalStatus,
   getMyReferrals,
   getMyStats,
+  trackClick,
 } from "../controllers/resellerController.js";
 import { authenticateToken, requireAdmin } from "../middleware/auth.js";
 
@@ -36,6 +37,7 @@ router.put("/admin/withdrawals/:id/status", authenticateToken, requireAdmin, upd
 // Referrals & stats endpoints
 router.get("/referrals", authenticateToken, getMyReferrals);
 router.get("/stats", authenticateToken, getMyStats);
+router.post("/click", trackClick);
 
 export default router;
 
