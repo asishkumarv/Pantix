@@ -8,11 +8,11 @@ export const getAllResellers = async (req, res) => {
         name,
         email as contact,
         COALESCE(phone, 'India') as region,
-        COALESCE((SELECT SUM(reseller_commission) FROM orders WHERE reseller_id = users.id), 0.00) as sales,
+        COALESCE((SELECT SUM(total) FROM orders WHERE reseller_id = users.id), 0.00) as sales,
         CASE 
-          WHEN COALESCE((SELECT SUM(reseller_commission) FROM orders WHERE reseller_id = users.id), 0.00) >= 1000 THEN 'Platinum'
-          WHEN COALESCE((SELECT SUM(reseller_commission) FROM orders WHERE reseller_id = users.id), 0.00) >= 500 THEN 'Gold'
-          WHEN COALESCE((SELECT SUM(reseller_commission) FROM orders WHERE reseller_id = users.id), 0.00) >= 200 THEN 'Silver'
+          WHEN COALESCE((SELECT SUM(total) FROM orders WHERE reseller_id = users.id), 0.00) >= 50000 THEN 'Platinum'
+          WHEN COALESCE((SELECT SUM(total) FROM orders WHERE reseller_id = users.id), 0.00) >= 20000 THEN 'Gold'
+          WHEN COALESCE((SELECT SUM(total) FROM orders WHERE reseller_id = users.id), 0.00) >= 5000 THEN 'Silver'
           ELSE 'Bronze'
         END as tier,
         'Active' as status
