@@ -276,25 +276,31 @@ export const updateWithdrawalStatus = async (req, res) => {
 
 export const getMyReferrals = async (req, res) => {
   const userId = req.user.id;
-  const { filter } = req.query; // 'today', 'yesterday', '7days', '30days', 'all'
+  const { filter, startDate, endDate } = req.query; // 'today', 'yesterday', '7days', '30days', 'all', 'custom'
   try {
     let dateFilter = "";
+    const params = [userId];
+
     if (filter === "today") {
-      dateFilter = "AND created_at >= date_trunc('day', NOW())";
+      dateFilter = "AND oc.created_at >= date_trunc('day', NOW())";
     } else if (filter === "yesterday") {
-      dateFilter = "AND created_at >= date_trunc('day', NOW() - interval '1 day') AND created_at < date_trunc('day', NOW())";
+      dateFilter = "AND oc.created_at >= date_trunc('day', NOW() - interval '1 day') AND oc.created_at < date_trunc('day', NOW())";
     } else if (filter === "7days") {
-      dateFilter = "AND created_at >= NOW() - interval '7 days'";
+      dateFilter = "AND oc.created_at >= NOW() - interval '7 days'";
     } else if (filter === "30days") {
-      dateFilter = "AND created_at >= NOW() - interval '30 days'";
+      dateFilter = "AND oc.created_at >= NOW() - interval '30 days'";
+    } else if (filter === "custom" && startDate && endDate) {
+      dateFilter = "AND oc.created_at >= $2 AND oc.created_at <= $3";
+      params.push(startDate, endDate);
     }
 
     const result = await pool.query(
-      `SELECT id, order_id, product_name, commission_amount, status, created_at as date 
-       FROM order_commissions 
-       WHERE reseller_id = $1 ${dateFilter} 
-       ORDER BY created_at DESC`,
-      [userId]
+      `SELECT oc.id, oc.order_id, oc.product_name, oc.commission_amount, oc.status, oc.created_at as date, o.total as order_amount
+       FROM order_commissions oc
+       JOIN orders o ON oc.order_id = o.id
+       WHERE oc.reseller_id = $1 ${dateFilter} 
+       ORDER BY oc.created_at DESC`,
+      params
     );
     res.json(result.rows);
   } catch (err) {

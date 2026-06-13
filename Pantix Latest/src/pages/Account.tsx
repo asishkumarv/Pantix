@@ -434,6 +434,9 @@ function ResellerTab() {
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [referralFilter, setReferralFilter] = useState("all");
+  const [showFullHistory, setShowFullHistory] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [resellerStats, setResellerStats] = useState<{
     tier: string;
@@ -462,7 +465,11 @@ function ResellerTab() {
       }
 
       // Fetch referrals
-      const rRes = await fetch(`${API_URL}/api/resellers/referrals?filter=${referralFilter}`, {
+      let url = `${API_URL}/api/resellers/referrals?filter=${referralFilter}`;
+      if (referralFilter === "custom" && customStartDate && customEndDate) {
+        url += `&startDate=${customStartDate}&endDate=${customEndDate}`;
+      }
+      const rRes = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (rRes.ok) {
@@ -490,7 +497,7 @@ function ResellerTab() {
     if (user?.is_reseller) {
       fetchHistory();
     }
-  }, [refreshUser, user?.is_reseller, fetchHistory, referralFilter]);
+  }, [refreshUser, user?.is_reseller, fetchHistory, referralFilter, customStartDate, customEndDate]);
 
   const handleActivate = async () => {
     setLoading(true);
@@ -610,6 +617,116 @@ function ResellerTab() {
   const currentTier = resellerStats?.tier || "Bronze";
   const tc = tierConfig[currentTier] || tierConfig.Bronze;
 
+  if (showFullHistory) {
+    return (
+      <div className="space-y-6 animate-fade-in py-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 className="font-display text-3xl text-gold">Order & Commission History</h2>
+            <p className="text-xs text-muted-foreground">Track all your referred orders and earnings</p>
+          </div>
+          <button 
+            onClick={() => setShowFullHistory(false)}
+            className="px-4 py-1.5 border border-gold/30 hover:bg-gold/10 text-gold text-xs font-semibold rounded-full uppercase tracking-wider flex items-center gap-2 transition"
+          >
+            <ArrowLeft className="w-3 h-3" /> Back to Dashboard
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3 items-end p-4 border border-gold/15 bg-card/30 rounded-2xl">
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Date Range</label>
+            <select 
+              value={referralFilter} 
+              onChange={(e) => setReferralFilter(e.target.value)}
+              className="bg-card border border-gold/30 text-white text-sm px-3 py-2 rounded-xl focus:outline-none focus:border-gold w-full sm:w-auto min-w-[150px]"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="7days">Last 7 Days</option>
+              <option value="30days">Last 30 Days</option>
+              <option value="custom">Custom Range</option>
+            </select>
+          </div>
+
+          {referralFilter === "custom" && (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Start Date</label>
+                <input 
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="bg-card border border-gold/30 text-white text-sm px-3 py-1.5 rounded-xl focus:outline-none focus:border-gold"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wider">End Date</label>
+                <input 
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="bg-card border border-gold/30 text-white text-sm px-3 py-1.5 rounded-xl focus:outline-none focus:border-gold"
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* History Table */}
+        <div className="border border-gold/20 bg-card/40 rounded-2xl overflow-hidden overflow-x-auto shadow-royal">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-gold/10 text-gold/80 uppercase text-[10px] tracking-wider border-b border-gold/20">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Order ID</th>
+                <th className="px-4 py-3 font-semibold">Product Name</th>
+                <th className="px-4 py-3 font-semibold">Order Date</th>
+                <th className="px-4 py-3 font-semibold">Order Amount</th>
+                <th className="px-4 py-3 font-semibold">Commission</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gold/10">
+              {loadingHistory ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gold">Loading history...</td>
+                </tr>
+              ) : referrals.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground text-xs">No orders found for this period.</td>
+                </tr>
+              ) : (
+                referrals.map((ref, i) => (
+                  <tr key={i} className="hover:bg-gold/5 transition">
+                    <td className="px-4 py-3 text-white font-medium">{ref.order_id}</td>
+                    <td className="px-4 py-3 text-muted-foreground max-w-[200px] truncate">{ref.product_name}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">
+                      {new Date(ref.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </td>
+                    <td className="px-4 py-3 text-white">₹{Number(ref.order_amount || 0).toLocaleString("en-IN")}</td>
+                    <td className="px-4 py-3 text-emerald-bright font-semibold">₹{Number(ref.commission_amount).toLocaleString("en-IN")}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border ${
+                        ref.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' :
+                        ref.status === 'Rejected' ? 'bg-red-500/10 text-red-500 border-red-500/30' :
+                        ref.status === 'Reversed' ? 'bg-orange-500/10 text-orange-500 border-orange-500/30' :
+                        'bg-yellow-500/10 text-yellow-500 border-yellow-500/30'
+                      }`}>
+                        {ref.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in py-2">
       {/* Header with live tier badge */}
@@ -618,9 +735,17 @@ function ResellerTab() {
           <h2 className="font-display text-3xl text-gold">Reseller Console</h2>
           <p className="text-xs text-muted-foreground">Manage your profit margins & referred orders</p>
         </div>
-        <div className={`px-3 py-1.5 ${tc.bg} ${tc.border} border rounded-full text-xs font-semibold ${tc.color} tracking-wider uppercase flex items-center gap-1.5`}>
-          <span>{tc.icon}</span>
-          {currentTier} Reseller
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setShowFullHistory(true)}
+            className="px-4 py-1.5 border border-gold/30 hover:bg-gold/10 text-gold text-xs font-semibold rounded-full uppercase tracking-wider transition"
+          >
+            History
+          </button>
+          <div className={`px-3 py-1.5 ${tc.bg} ${tc.border} border rounded-full text-xs font-semibold ${tc.color} tracking-wider uppercase flex items-center gap-1.5`}>
+            <span>{tc.icon}</span>
+            {currentTier} Reseller
+          </div>
         </div>
       </div>
 
@@ -705,8 +830,8 @@ function ResellerTab() {
               <ArrowUpRight className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Earnings This Month</p>
-              <p className="text-base font-bold text-white">₹{(resellerStats?.monthlyEarnings ?? 0).toLocaleString("en-IN")}</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Earnings</p>
+              <p className="text-base font-bold text-white">₹{(resellerStats?.totalEarnings ?? 0).toLocaleString("en-IN")}</p>
             </div>
           </div>
         </div>

@@ -169,12 +169,16 @@ const ProductPage = () => {
       // Save ref to cookie for 30 days
       document.cookie = `pantix_ref=${refId}; max-age=${30 * 24 * 60 * 60}; path=/`;
       
-      // Track the click in backend
-      fetch(`${API_URL}/api/resellers/click`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reseller_code: refId, product_id: product.id })
-      }).catch(() => {});
+      const sessionKey = `tracked_${refId}_${product.id}`;
+      if (!sessionStorage.getItem(sessionKey)) {
+        sessionStorage.setItem(sessionKey, "1");
+        // Track the click in backend
+        fetch(`${API_URL}/api/resellers/click`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reseller_code: refId, product_id: product.id })
+        }).catch(() => {});
+      }
     }
   }, [refId, product]);
 
