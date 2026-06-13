@@ -302,6 +302,7 @@ export const getMyReferrals = async (req, res) => {
        ORDER BY oc.created_at DESC`,
       params
     );
+    console.log("getMyReferrals result:", result.rows);
     res.json(result.rows);
   } catch (err) {
     console.error("GetMyReferrals error:", err);
