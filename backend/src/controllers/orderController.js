@@ -88,8 +88,17 @@ export const createOrder = async (req, res) => {
   const id = `PNX-${randNum}`;
 
   try {
-    const customer_name = req.user.name || "Customer";
+    let customer_name = req.user.name;
     const customer_email = req.user.email;
+
+    if (!customer_name) {
+      const userRes = await pool.query("SELECT name FROM users WHERE email = $1", [customer_email]);
+      if (userRes.rows.length > 0) {
+        customer_name = userRes.rows[0].name;
+      } else {
+        customer_name = "Customer";
+      }
+    }
 
     const result = await pool.query(
       `INSERT INTO orders (id, customer_name, customer_email, total, status, payment, items, address, reseller_id, reseller_commission)

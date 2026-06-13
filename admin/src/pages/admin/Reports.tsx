@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import PageHeader from "@/components/admin/PageHeader";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend } from "recharts";
 import { Button } from "@/components/ui/button";
@@ -21,9 +22,9 @@ export default function Reports() {
     const fetchReports = async () => {
       try {
         const [revRes, ordersRes, productsRes] = await Promise.all([
-          apiFetch("https://pantix-final-3.onrender.com/api/dashboard/revenue-report"),
-          apiFetch("https://pantix-final-3.onrender.com/api/orders"),
-          apiFetch("https://pantix-final-3.onrender.com/api/products")
+          apiFetch(`${API_URL}/api/dashboard/revenue-report`),
+          apiFetch(`${API_URL}/api/orders`),
+          apiFetch(`${API_URL}/api/products`)
         ]);
 
         if (revRes.ok) setRevenueSeries(await revRes.json());

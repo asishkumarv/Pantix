@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { Link, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,8 +16,8 @@ const getValidImage = (img: string) => {
   if (!img) return "";
   if (img.startsWith("#")) return img; // Keep colors
   if (img.startsWith("http")) return img;
-  if (img.startsWith("/uploads/")) return `https://pantix-final-3.onrender.com${img}`;
-  if (img.startsWith("uploads/")) return `https://pantix-final-3.onrender.com/${img}`;
+  if (img.startsWith("/uploads/")) return `${API_URL}${img}`;
+  if (img.startsWith("uploads/")) return `${API_URL}/${img}`;
   
   if (img.includes("frock")) return "/images/cat-frock.jpg";
   if (img.includes("plus-size")) return "/images/cat-plussize.jpg";
@@ -45,7 +46,7 @@ export default function Products({ collection }: { collection?: "budget" | "popu
   const { data: products = [], isLoading, error } = useQuery<Product[]>({
     queryKey: ["products"],
     queryFn: async () => {
-      const res = await apiFetch("https://pantix-final-3.onrender.com/api/products");
+      const res = await apiFetch(`${API_URL}/api/products`);
       if (!res.ok) throw new Error("Failed to fetch products");
       return res.json();
     },
@@ -53,7 +54,7 @@ export default function Products({ collection }: { collection?: "budget" | "popu
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await apiFetch(`https://pantix-final-3.onrender.com/api/products/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`${API_URL}/api/products/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete product");
       return res.json();
     },

@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageHeader from "@/components/admin/PageHeader";
@@ -34,7 +35,7 @@ export default function Orders() {
   const { data: orders = [], isLoading, error } = useQuery<ApiOrder[]>({
     queryKey: ["orders"],
     queryFn: async () => {
-      const res = await apiFetch("https://pantix-final-3.onrender.com/api/orders");
+      const res = await apiFetch(`${API_URL}/api/orders`);
       if (!res.ok) throw new Error("Failed to fetch orders");
       return res.json();
     },
@@ -42,7 +43,7 @@ export default function Orders() {
 
   const statusMutation = useMutation({
     mutationFn: async (payload: { id: string; status: OrderStatus; payment: PaymentStatus }) => {
-      const res = await apiFetch(`https://pantix-final-3.onrender.com/api/orders/${payload.id}/status`, {
+      const res = await apiFetch(`${API_URL}/api/orders/${payload.id}/status`, {
         method: "PUT",
         body: JSON.stringify({ status: payload.status, payment: payload.payment }),
       });

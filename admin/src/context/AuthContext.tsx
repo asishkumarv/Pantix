@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 type User = { name: string; email: string; role: string };
@@ -24,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch("https://pantix-final-3.onrender.com/api/auth/login", {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

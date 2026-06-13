@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { Wallet, ShoppingCart, Truck, Users as UsersIcon, Network, Package, ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -20,9 +21,9 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         const [statsRes, revRes, ordersRes] = await Promise.all([
-          apiFetch("https://pantix-final-3.onrender.com/api/dashboard/stats"),
-          apiFetch("https://pantix-final-3.onrender.com/api/dashboard/revenue-report"),
-          apiFetch("https://pantix-final-3.onrender.com/api/orders")
+          apiFetch(`${API_URL}/api/dashboard/stats`),
+          apiFetch(`${API_URL}/api/dashboard/revenue-report`),
+          apiFetch(`${API_URL}/api/orders`)
         ]);
 
         if (statsRes.ok) setStats(await statsRes.json());

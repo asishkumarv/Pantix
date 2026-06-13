@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { useState } from "react";
 import { Link, useNavigate } from "@/lib/router-compat";
 import { Package, Heart, Plus, Trash2, MapPin, Eye, EyeOff, Lock } from "lucide-react";
@@ -67,7 +68,7 @@ export function ProfileTab({
     }
     setChangingPwd(true);
     try {
-      const res = await fetch("https://pantix-final-3.onrender.com/api/auth/change-password", {
+      const res = await fetch(`${API_URL}/api/auth/change-password`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

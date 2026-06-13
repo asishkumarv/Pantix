@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "@/lib/router-compat";
 import {
@@ -59,7 +60,7 @@ const Account = () => {
 
       try {
         const token = localStorage.getItem("pantix_token");
-        const res = await fetch("https://pantix-final-3.onrender.com/api/orders", {
+        const res = await fetch(`${API_URL}/api/orders`, {
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -449,7 +450,7 @@ function ResellerTab() {
     setLoadingHistory(true);
     try {
       // Fetch withdrawals
-      const wRes = await fetch("https://pantix-final-3.onrender.com/api/resellers/withdrawals", {
+      const wRes = await fetch(`${API_URL}/api/resellers/withdrawals`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (wRes.ok) {
@@ -458,7 +459,7 @@ function ResellerTab() {
       }
 
       // Fetch referrals
-      const rRes = await fetch("https://pantix-final-3.onrender.com/api/resellers/referrals", {
+      const rRes = await fetch(`${API_URL}/api/resellers/referrals`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (rRes.ok) {
@@ -467,7 +468,7 @@ function ResellerTab() {
       }
 
       // Fetch live tier stats
-      const sRes = await fetch("https://pantix-final-3.onrender.com/api/resellers/stats", {
+      const sRes = await fetch(`${API_URL}/api/resellers/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (sRes.ok) {
@@ -518,7 +519,7 @@ function ResellerTab() {
 
     setSubmittingWithdrawal(true);
     try {
-      const res = await fetch("https://pantix-final-3.onrender.com/api/resellers/withdrawals", {
+      const res = await fetch(`${API_URL}/api/resellers/withdrawals`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

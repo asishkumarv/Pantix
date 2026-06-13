@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageHeader from "@/components/admin/PageHeader";
@@ -19,7 +20,7 @@ type Category = {
 const accentColors = ["#4F46E5", "#10B981", "#F59E0B", "#EC4899", "#06B6D4", "#8B5CF6", "#F97316", "#14B8A6"];
 const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ||
-  "https://pantix-final-3.onrender.com";
+  `${API_URL}`;
 
 const getValidImage = (img: string) => {
   if (!img) return "";
@@ -79,7 +80,7 @@ export default function Categories() {
   const { data: categories = [], isLoading, error } = useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: async () => {
-      const res = await apiFetch("https://pantix-final-3.onrender.com/api/categories");
+      const res = await apiFetch(`${API_URL}/api/categories`);
       if (!res.ok) throw new Error("Failed to fetch categories");
       return res.json();
     },
@@ -88,7 +89,7 @@ export default function Categories() {
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
-      const res = await apiFetch("https://pantix-final-3.onrender.com/api/products");
+      const res = await apiFetch(`${API_URL}/api/products`);
       if (!res.ok) return [];
       return res.json();
     },
@@ -101,7 +102,7 @@ export default function Categories() {
     formData.append("image", imageFile);
     const token = localStorage.getItem(TOKEN_KEY);
 
-    const res = await fetch("https://pantix-final-3.onrender.com/api/uploads/category-image", {
+    const res = await fetch(`${API_URL}/api/uploads/category-image`, {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
@@ -118,7 +119,7 @@ export default function Categories() {
 
   const createMutation = useMutation({
     mutationFn: async (payload: Category) => {
-      const res = await apiFetch("https://pantix-final-3.onrender.com/api/categories", {
+      const res = await apiFetch(`${API_URL}/api/categories`, {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -140,7 +141,7 @@ export default function Categories() {
 
   const updateMutation = useMutation({
     mutationFn: async (payload: { id: string; data: Partial<Category> }) => {
-      const res = await apiFetch(`https://pantix-final-3.onrender.com/api/categories/${payload.id}`, {
+      const res = await apiFetch(`${API_URL}/api/categories/${payload.id}`, {
         method: "PUT",
         body: JSON.stringify(payload.data),
       });
@@ -162,7 +163,7 @@ export default function Categories() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await apiFetch(`https://pantix-final-3.onrender.com/api/categories/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`${API_URL}/api/categories/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Failed to delete category");

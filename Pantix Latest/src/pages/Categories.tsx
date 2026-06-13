@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { Link } from "@/lib/router-compat";
 import { Layout } from "@/components/Layout";
 import { useStore } from "@/lib/store";
@@ -11,7 +12,7 @@ type ApiCategory = {
 
 const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ||
-  "https://pantix-final-3.onrender.com";
+  `${API_URL}`;
 
 const resolveImage = (image: string | null | undefined, fallback: string) => {
   if (!image) return fallback;

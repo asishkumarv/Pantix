@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { FormEvent, useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -44,7 +45,7 @@ export default function AddProduct() {
   const [extraImages, setExtraImages] = useState<ExtraImageItem[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const API_BASE_URL = "https://pantix-final-3.onrender.com";
+  const API_BASE_URL = `${API_URL}`;
   
   const getPreviewImage = (img: string) => {
     if (!img) return "";
@@ -70,7 +71,7 @@ export default function AddProduct() {
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const res = await apiFetch("https://pantix-final-3.onrender.com/api/categories");
+      const res = await apiFetch(`${API_URL}/api/categories`);
       if (!res.ok) throw new Error("Failed to fetch categories");
       return res.json();
     },
@@ -79,7 +80,7 @@ export default function AddProduct() {
   const { data: product, isLoading: isFetching } = useQuery({
     queryKey: ["product", id],
     queryFn: async () => {
-      const res = await apiFetch(`https://pantix-final-3.onrender.com/api/products/${id}`);
+      const res = await apiFetch(`${API_URL}/api/products/${id}`);
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
@@ -129,7 +130,7 @@ export default function AddProduct() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
-      const url = isEdit ? `https://pantix-final-3.onrender.com/api/products/${id}` : "https://pantix-final-3.onrender.com/api/products";
+      const url = isEdit ? `${API_URL}/api/products/${id}` : `${API_URL}/api/products`;
       const method = isEdit ? "PUT" : "POST";
       const res = await apiFetch(url, {
         method,
@@ -165,7 +166,7 @@ export default function AddProduct() {
     formData.append("image", file);
     const token = localStorage.getItem(TOKEN_KEY);
 
-    const res = await fetch("https://pantix-final-3.onrender.com/api/uploads/product-image", {
+    const res = await fetch(`${API_URL}/api/uploads/product-image`, {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,

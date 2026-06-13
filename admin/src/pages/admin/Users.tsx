@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { useState } from "react";
 import PageHeader from "@/components/admin/PageHeader";
 import StatusBadge from "@/components/admin/StatusBadge";
@@ -13,7 +14,7 @@ export default function Users() {
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
-      const res = await apiFetch("https://pantix-final-3.onrender.com/api/users");
+      const res = await apiFetch(`${API_URL}/api/users`);
       if (!res.ok) throw new Error("Failed to fetch users");
       return res.json();
     },

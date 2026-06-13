@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import {
   createContext,
   useCallback,
@@ -118,7 +119,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem("pantix_token");
     if (!token) return;
     try {
-      const response = await fetch("https://pantix-final-3.onrender.com/api/auth/me", {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -143,7 +144,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem("pantix_token");
     if (!token) return false;
     try {
-      const response = await fetch("https://pantix-final-3.onrender.com/api/auth/reseller/enable", {
+      const response = await fetch(`${API_URL}/api/auth/reseller/enable`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -173,7 +174,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    const API_BASE_URL = "https://pantix-final-3.onrender.com";
+    const API_BASE_URL = `${API_URL}`;
 
     const fetchAll = async () => {
       let rawProducts: any[] = [];
@@ -309,7 +310,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      const response = await fetch("https://pantix-final-3.onrender.com/api/auth/login", {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -329,7 +330,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const register = useCallback(
     async (name: string, email: string, password: string) => {
       try {
-        const response = await fetch("https://pantix-final-3.onrender.com/api/auth/register", {
+        const response = await fetch(`${API_URL}/api/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, email, password }),
@@ -428,7 +429,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const token = localStorage.getItem("pantix_token");
         if (token) {
           try {
-            await fetch("https://pantix-final-3.onrender.com/api/auth/addresses", {
+            await fetch(`${API_URL}/api/auth/addresses`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -447,7 +448,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const token = localStorage.getItem("pantix_token");
         if (token) {
           try {
-            await fetch(`https://pantix-final-3.onrender.com/api/auth/addresses/${id}`, {
+            await fetch(`${API_URL}/api/auth/addresses/${id}`, {
               method: "DELETE",
               headers: {
                 Authorization: `Bearer ${token}`,

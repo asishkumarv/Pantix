@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { useParams } from "react-router-dom";
 import { Link, useNavigate } from "@/lib/router-compat";
 import { useStore, formatINR } from "@/lib/store";
@@ -29,7 +30,7 @@ export default function OrderDetails() {
     const fetchOrder = async () => {
       try {
         const token = localStorage.getItem("pantix_token");
-        const res = await fetch("https://pantix-final-3.onrender.com/api/orders", {
+        const res = await fetch(`${API_URL}/api/orders`, {
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),

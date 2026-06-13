@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { useState, useEffect } from "react";
 import PageHeader from "@/components/admin/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ export default function Settings() {
 
   const fetchAdmins = async () => {
     try {
-      const res = await apiFetch("https://pantix-final-3.onrender.com/api/users");
+      const res = await apiFetch(`${API_URL}/api/users`);
       if (res.ok) {
         const users = await res.json();
         setAdmins(users.filter((u: any) => u.role === "admin" || u.role === "Super Admin" || u.role === "admin-user"));
@@ -39,7 +40,7 @@ export default function Settings() {
     }
     setIsSubmitting(true);
     try {
-      const res = await apiFetch("https://pantix-final-3.onrender.com/api/auth/create-admin", {
+      const res = await apiFetch(`${API_URL}/api/auth/create-admin`, {
         method: "POST",
         body: JSON.stringify({ name, email, password }),
       });

@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Package, Truck, Check, ClipboardList, Loader2 } from "lucide-react";
@@ -36,7 +37,7 @@ const Track = () => {
 
     try {
       const token = localStorage.getItem("pantix_token");
-      const res = await fetch(`https://pantix-final-3.onrender.com/api/orders/${orderId}`, {
+      const res = await fetch(`${API_URL}/api/orders/${orderId}`, {
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),

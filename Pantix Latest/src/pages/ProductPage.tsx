@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "@/lib/router-compat";
 import { useSearchParams } from "react-router-dom";
@@ -133,7 +134,7 @@ const ProductPage = () => {
 
     const fetchReviews = async () => {
       try {
-        const res = await fetch(`https://pantix-final-3.onrender.com/api/products/${id}/reviews`);
+        const res = await fetch(`${API_URL}/api/products/${id}/reviews`);
         if (!res.ok) throw new Error("Failed to fetch reviews");
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -216,7 +217,7 @@ const ProductPage = () => {
     if (!reviewName.trim() || !reviewText.trim()) return;
 
     try {
-      const res = await fetch(`https://pantix-final-3.onrender.com/api/products/${product.id}/reviews`, {
+      const res = await fetch(`${API_URL}/api/products/${product.id}/reviews`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,3 +1,4 @@
+import { API_URL } from "@/api";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PageHeader from "@/components/admin/PageHeader";
@@ -63,7 +64,7 @@ export default function Resellers() {
   const { data: resellers = [], isLoading, error } = useQuery({
     queryKey: ["resellers"],
     queryFn: async () => {
-      const res = await apiFetch("https://pantix-final-3.onrender.com/api/resellers");
+      const res = await apiFetch(`${API_URL}/api/resellers`);
       if (!res.ok) throw new Error("Failed to fetch resellers");
       return res.json();
     },
@@ -72,7 +73,7 @@ export default function Resellers() {
   const { data: withdrawals = [], isLoading: isLoadingW } = useQuery({
     queryKey: ["withdrawals"],
     queryFn: async () => {
-      const res = await apiFetch("https://pantix-final-3.onrender.com/api/resellers/admin/withdrawals");
+      const res = await apiFetch(`${API_URL}/api/resellers/admin/withdrawals`);
       if (!res.ok) throw new Error("Failed to fetch withdrawals");
       return res.json();
     },
@@ -80,7 +81,7 @@ export default function Resellers() {
 
   const approveMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiFetch(`https://pantix-final-3.onrender.com/api/resellers/admin/withdrawals/${id}/status`, {
+      const res = await apiFetch(`${API_URL}/api/resellers/admin/withdrawals/${id}/status`, {
         method: "PUT",
         body: JSON.stringify({ status: "Approved" }),
       });
@@ -102,7 +103,7 @@ export default function Resellers() {
 
   const rejectMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiFetch(`https://pantix-final-3.onrender.com/api/resellers/admin/withdrawals/${id}/status`, {
+      const res = await apiFetch(`${API_URL}/api/resellers/admin/withdrawals/${id}/status`, {
         method: "PUT",
         body: JSON.stringify({ status: "Rejected" }),
       });
@@ -157,7 +158,7 @@ export default function Resellers() {
 
   const createMutation = useMutation({
     mutationFn: async (data: Omit<Reseller, "id"> & { id: string }) => {
-      const res = await apiFetch("https://pantix-final-3.onrender.com/api/resellers", {
+      const res = await apiFetch(`${API_URL}/api/resellers`, {
         method: "POST",
         body: JSON.stringify(data),
       });
@@ -179,7 +180,7 @@ export default function Resellers() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: { id: string; payload: Partial<Reseller> }) => {
-      const res = await apiFetch(`https://pantix-final-3.onrender.com/api/resellers/${data.id}`, {
+      const res = await apiFetch(`${API_URL}/api/resellers/${data.id}`, {
         method: "PUT",
         body: JSON.stringify(data.payload),
       });
@@ -201,7 +202,7 @@ export default function Resellers() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await apiFetch(`https://pantix-final-3.onrender.com/api/resellers/${id}`, {
+      const res = await apiFetch(`${API_URL}/api/resellers/${id}`, {
         method: "DELETE",
       });
       if (!res.ok) {
