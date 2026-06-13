@@ -170,7 +170,7 @@ export function Navbar() {
                             Wishlist
                           </Link>
                           <Link
-                            to="/track"
+                            to="/account/orders"
                             className="block px-3 py-2 text-sm text-foreground hover:bg-gold/10 hover:text-gold rounded"
                           >
                             Orders
