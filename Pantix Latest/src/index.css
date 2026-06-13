@@ -1,0 +1,375 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================================
+   Pantix — The Queen's World
+   Royal emerald + vivid gold luxury design system.
+   All colors are HSL channels (h s% l%).
+   ========================================================= */
+
+@layer base {
+  :root {
+    --radius: 0.625rem;
+
+    --background: 162 42% 11%;
+    --foreground: 45 70% 96%;
+    --card: 162 38% 16%;
+    --card-foreground: 45 70% 96%;
+    --popover: 162 42% 13%;
+    --popover-foreground: 45 70% 96%;
+    --primary: 44 88% 62%;
+    --primary-foreground: 162 50% 8%;
+    --primary-glow: 48 95% 75%;
+    --secondary: 162 32% 22%;
+    --secondary-foreground: 45 70% 96%;
+    --muted: 162 28% 22%;
+    --muted-foreground: 45 30% 82%;
+    --accent: 44 88% 62%;
+    --accent-foreground: 162 50% 8%;
+    --destructive: 0 75% 58%;
+    --destructive-foreground: 45 70% 98%;
+    --border: 44 60% 38%;
+    --input: 44 55% 32%;
+    --ring: 44 88% 62%;
+
+    --gold: 44 88% 62%;
+    --gold-soft: 46 80% 78%;
+    --gold-deep: 38 75% 48%;
+    --emerald: 162 42% 14%;
+    --emerald-deep: 162 50% 7%;
+    --emerald-bright: 158 50% 22%;
+
+    --gradient-gold: linear-gradient(135deg, hsl(38 80% 52%) 0%, hsl(48 95% 75%) 50%, hsl(38 80% 52%) 100%);
+    --gradient-emerald: linear-gradient(160deg, hsl(162 50% 7%), hsl(158 38% 18%));
+    --gradient-royal: linear-gradient(135deg, hsl(162 50% 9%) 0%, hsl(158 45% 16%) 50%, hsl(162 50% 9%) 100%);
+    --gradient-dropdown: linear-gradient(160deg, hsl(162 55% 10%) 0%, hsl(158 42% 18%) 100%);
+
+    --shadow-royal: 0 30px 80px -20px hsl(0 0% 0% / 0.65), 0 0 0 1px hsl(44 88% 62% / 0.22);
+    --shadow-gold: 0 12px 44px -10px hsl(44 88% 62% / 0.55);
+    --shadow-gold-strong: 0 18px 60px -8px hsl(44 88% 62% / 0.7);
+    --shadow-card: 0 18px 40px -22px hsl(0 0% 0% / 0.7), 0 0 0 1px hsl(44 88% 62% / 0.12);
+
+    --sidebar-background: 162 50% 7%;
+    --sidebar-foreground: 45 70% 96%;
+    --sidebar-primary: 44 88% 62%;
+    --sidebar-primary-foreground: 162 50% 8%;
+    --sidebar-accent: 162 35% 18%;
+    --sidebar-accent-foreground: 45 70% 96%;
+    --sidebar-border: 44 55% 32%;
+    --sidebar-ring: 44 88% 62%;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    letter-spacing: 0.01em;
+  }
+
+  h1 { font-weight: 600; }
+  h2 { font-weight: 500; }
+}
+
+@layer utilities {
+  .gradient-text-gold {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bg-gradient-royal { background: var(--gradient-royal); }
+  .bg-gradient-emerald { background: var(--gradient-emerald); }
+  .bg-gradient-gold { background: var(--gradient-gold); }
+  .bg-gradient-dropdown { background: var(--gradient-dropdown); }
+  .bg-primary-gradient { background: var(--gradient-gold); }
+
+  .shadow-royal { box-shadow: var(--shadow-royal); }
+  .shadow-gold { box-shadow: var(--shadow-gold); }
+  .shadow-gold-strong { box-shadow: var(--shadow-gold-strong); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+
+  .gold-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--gold)), transparent);
+  }
+
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { scrollbar-width: none; }
+
+  .btn-gold {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.75rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    color: hsl(var(--primary-foreground));
+    transition: all 0.3s ease;
+    background: var(--gradient-gold);
+    background-size: 200% 100%;
+    background-position: 0% 50%;
+    box-shadow: var(--shadow-gold);
+    border-radius: var(--radius);
+  }
+
+  .btn-gold:hover {
+    background-position: 100% 50%;
+    box-shadow: var(--shadow-gold-strong);
+    transform: translateY(-1px);
+  }
+
+  .btn-glow { position: relative; overflow: hidden; }
+
+  .btn-glow::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: var(--gradient-gold);
+    opacity: 0;
+    filter: blur(18px);
+    transition: opacity 0.4s ease;
+    z-index: -1;
+  }
+
+  .btn-glow:hover::before { opacity: 0.85; }
+
+  .btn-outline-gold {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.75rem;
+    border: 2px solid hsl(var(--gold));
+    color: hsl(var(--gold));
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    border-radius: var(--radius);
+  }
+
+  .btn-outline-gold:hover {
+    background: hsl(var(--gold) / 0.12);
+    box-shadow: var(--shadow-gold);
+    transform: translateY(-1px);
+  }
+
+  .nav-link {
+    position: relative;
+    display: inline-block;
+    padding: 0.5rem 0;
+    font-weight: 500;
+    color: hsl(45 80% 92%);
+    transition: color 0.3s ease;
+  }
+
+  .nav-link:hover { color: hsl(var(--gold)); }
+
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--gradient-gold);
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .nav-link:hover::after,
+  .nav-link.active::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+
+  .nav-link.active { color: hsl(var(--gold)); }
+
+  .price-display {
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-weight: 600;
+    font-size: 2rem;
+    line-height: 1.1;
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 0.01em;
+  }
+
+  @media (min-width: 768px) {
+    .price-display { font-size: 2.5rem; }
+  }
+
+  .filter-heading {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid hsl(var(--gold) / 0.3);
+    color: hsl(46 92% 78%);
+  }
+
+  .glossy-header {
+    background: linear-gradient(180deg, #0b221cb8, #081c16d1) !important;
+    backdrop-filter: blur(24px) saturate(170%) !important;
+    border-bottom: 1px solid hsl(var(--gold) / 0.32);
+    box-shadow:
+      0 10px 40px -12px hsl(0 0% 0% / 0.55),
+      0 1px 0 0 hsl(var(--gold) / 0.18) inset,
+      0 0 60px -10px hsl(var(--gold) / 0.18);
+  }
+
+  .glossy-header::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 50%;
+    background: linear-gradient(180deg, hsl(45 80% 92% / 0.07) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .glossy-drawer {
+    background: linear-gradient(160deg, hsl(162 55% 9% / 0.92) 0%, hsl(158 45% 14% / 0.95) 60%, hsl(162 55% 8% / 0.95) 100%);
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    border-right: 1px solid hsl(var(--gold) / 0.32);
+    box-shadow:
+      30px 0 80px -20px hsl(0 0% 0% / 0.65),
+      1px 0 0 0 hsl(var(--gold) / 0.18) inset;
+  }
+
+  .glass-nav {
+    backdrop-filter: blur(24px) saturate(170%);
+    border-top: 1px solid hsl(var(--gold) / 0.35);
+    background: linear-gradient(180deg, #0b221cb8, #081c16d1);
+    box-shadow:
+      0 -10px 40px -10px hsl(0 0% 0% / 0.55),
+      0 -1px 0 0 hsl(var(--gold) / 0.18) inset,
+      0 0 60px -10px hsl(var(--gold) / 0.18);
+  }
+
+  .category-scroller {
+    cursor: grab;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    will-change: scroll-position;
+  }
+
+  .category-scroller:active { cursor: grabbing; }
+
+  .category-scroller.is-dragging,
+  .category-scroller.is-dragging * {
+    cursor: grabbing;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .category-arch-card {
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .category-arch-card img {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+
+  .category-arch-frame {
+    border: 1px solid hsl(var(--gold) / 0.28);
+    border-radius: 999px 999px 0.4rem 0.4rem;
+    background: linear-gradient(180deg, hsl(var(--gold-soft) / 0.1), hsl(var(--emerald-deep) / 0.22));
+    box-shadow:
+      0 18px 44px -24px hsl(0 0% 0% / 0.75),
+      0 0 0 1px hsl(var(--gold) / 0.12) inset,
+      0 0 28px -14px hsl(var(--gold) / 0.4);
+    transition:
+      transform 0.35s ease,
+      border-color 0.35s ease,
+      box-shadow 0.35s ease;
+  }
+
+  .category-arch-card:hover .category-arch-frame {
+    transform: translateY(-4px);
+    border-color: hsl(var(--gold) / 0.55);
+    box-shadow:
+      0 26px 56px -26px hsl(0 0% 0% / 0.78),
+      0 0 0 1px hsl(var(--gold) / 0.2) inset,
+      0 0 36px -14px hsl(var(--gold) / 0.48);
+  }
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .animate-marquee { animation: marquee 40s linear infinite; }
+
+  .marquee-pause:hover .animate-marquee {
+    animation-play-state: paused;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .animate-shimmer { animation: shimmer 2.5s linear infinite; }
+}
+
+/* Custom thin gold scrollbar */
+.scrollbar-gold {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--gold) / 0.55) transparent;
+}
+
+.scrollbar-gold::-webkit-scrollbar { width: 6px; }
+
+.scrollbar-gold::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 8px 0;
+}
+
+.scrollbar-gold::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, hsl(var(--gold) / 0.85), hsl(var(--gold-deep) / 0.85));
+  border-radius: 999px;
+  box-shadow: 0 0 6px hsl(var(--gold) / 0.45);
+}
+
+.scrollbar-gold::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, hsl(var(--gold)), hsl(var(--gold-deep)));
+}

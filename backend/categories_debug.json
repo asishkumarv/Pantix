@@ -1,0 +1,74 @@
+﻿[
+    {
+        "id":  "two-piece",
+        "name":  "2 Piece Sets",
+        "slug":  "two-piece",
+        "image":  "cat-2piece.jpg"
+    },
+    {
+        "id":  "three-piece-plus",
+        "name":  "3 Piece Kurta Sets (3XL–6XL)",
+        "slug":  "three-piece-plus",
+        "image":  "cat-plussize.jpg"
+    },
+    {
+        "id":  "three-piece",
+        "name":  "3 Piece Kurta Sets (M–XXL)",
+        "slug":  "three-piece",
+        "image":  "cat-3piece.jpg"
+    },
+    {
+        "id":  "budget",
+        "name":  "Budget Friendly",
+        "slug":  "budget",
+        "image":  "cat-budget.jpg"
+    },
+    {
+        "id":  "casual",
+        "name":  "Casual Wear",
+        "slug":  "casual",
+        "image":  "casual-1.jpg"
+    },
+    {
+        "id":  "feeding",
+        "name":  "Feeding Outfits",
+        "slug":  "feeding",
+        "image":  "casual-1.jpg"
+    },
+    {
+        "id":  "frocks",
+        "name":  "Frocks",
+        "slug":  "frocks",
+        "image":  "cat-frock.jpg"
+    },
+    {
+        "id":  "handlooms",
+        "name":  "Handlooms",
+        "slug":  "handlooms",
+        "image":  "saree-1.jpg"
+    },
+    {
+        "id":  "party",
+        "name":  "Party Wear",
+        "slug":  "party",
+        "image":  "party-1.jpg"
+    },
+    {
+        "id":  "plus-size",
+        "name":  "Plus Size",
+        "slug":  "plus-size",
+        "image":  "cat-plussize.jpg"
+    },
+    {
+        "id":  "traditional",
+        "name":  "Traditional Wear",
+        "slug":  "traditional",
+        "image":  "lehenga-1.jpg"
+    },
+    {
+        "id":  "C-1779262516091",
+        "name":  "test",
+        "slug":  "test",
+        "image":  "/uploads/1779262516023-dall--e-2024-12-16-13-48-09---an-ultra-modern-and-visually-stunning-instagram-friendly-background-for-javascript-quizzes--the-design-has-a-vibrant-gradient-of-deep-purple--blue--an.webp"
+    }
+]
