@@ -82,7 +82,6 @@ const ProductPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const refId = searchParams.get("ref");
-  const referrerMargin = searchParams.get("margin") ? Number(searchParams.get("margin")) : 0;
 
   const { addToCart, toggleWishlist, isWished, user, products, getProduct, isLoadingProducts } = useStore();
   const product = useMemo(() => (id ? getProduct(id) : undefined), [id, getProduct]);
@@ -109,8 +108,10 @@ const ProductPage = () => {
   const [reviewName, setReviewName] = useState(user?.name ?? "");
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
-  const [customMargin, setCustomMargin] = useState(150);
   const [copied, setCopied] = useState(false);
+  
+  const commissionRate = product?.commission_rate || 0;
+  const commissionAmount = product ? (product.price * commissionRate) / 100 : 0;
 
   // Sync size/color when product is loaded
   useEffect(() => {
@@ -206,8 +207,8 @@ const ProductPage = () => {
   }
 
   const wished = isWished(product.id);
-  const finalPrice = product.price + referrerMargin;
-  const finalMrp = product.mrp + referrerMargin;
+  const finalPrice = product.price;
+  const finalMrp = product.mrp;
   const total = finalPrice * qty;
   const related = products.filter((p) => p.id !== product.id).slice(0, 4);
 
@@ -223,7 +224,7 @@ const ProductPage = () => {
       : "bg-emerald-bright/30 text-primary-glow border-gold/40";
 
   const handleBuy = () => {
-    addToCart(product.id, size, color, qty, refId ?? undefined, referrerMargin || undefined);
+    addToCart(product.id, size, color, qty, refId ?? undefined);
     navigate("/checkout");
   };
 
@@ -246,45 +247,46 @@ const ProductPage = () => {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to submit review");
+        toast.error(errorData.error || "Failed to submit review");
+        return;
       }
 
-      const newReview = await res.json();
-
-      // Prep new formatted review
-      const formattedReview: Review = {
-        id: String(newReview.id),
-        name: newReview.name,
-        rating: Number(newReview.rating),
-        text: newReview.text,
-        date: newReview.date,
-      };
-
-      // Filter out seed reviews if we had only seeds, so only database reviews are shown once user adds a review
-      const cleanReviews = reviews.filter(r => !r.id.startsWith("seed-"));
-      const updated = [formattedReview, ...cleanReviews];
-      setReviews(updated);
-
-      try {
-        localStorage.setItem(REVIEWS_KEY(product.id), JSON.stringify(updated));
-      } catch {
-        /* noop */
-      }
-
+      toast.success("Review submitted!");
+      setShowForm(false);
       setReviewText("");
       setReviewRating(5);
-      setShowForm(false);
-      toast.success("Review submitted successfully! Thank you. 💖");
-    } catch (err: any) {
-      console.error("Submit review error:", err);
-      toast.error(err.message || "Could not submit review");
+      
+      const newReviews = await fetch(`${API_URL}/api/products/${product.id}/reviews`);
+      if (newReviews.ok) {
+        setReviews(await newReviews.json());
+      }
+    } catch (err) {
+      toast.error("Network error");
     }
   };
 
   return (
     <Layout>
-      <div className="mx-auto max-w-7xl px-4 py-10">
-        <div className="grid lg:grid-cols-[1.1fr_1fr] gap-10 items-start">
+      <div className="mx-auto max-w-7xl px-4 py-8 md:py-12 pb-24">
+        {/* Navigation & Breadcrumb */}
+        <div className="mb-6 flex items-center justify-between">
+          <Link
+            to="/categories"
+            className="group flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            Back to Categories
+          </Link>
+          <div className="hidden md:flex gap-2 text-xs text-muted-foreground">
+            <Link to="/" className="hover:text-gold transition-colors">Home</Link>
+            <span>/</span>
+            <Link to="/categories" className="hover:text-gold transition-colors">Categories</Link>
+            <span>/</span>
+            <span className="text-gold truncate max-w-[200px]">{product.name}</span>
+          </div>
+        </div>
+
+        <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-16">
           {/* Gallery — vertical thumbs on left, each thumb owns its own 3-image group */}
           <Gallery
             images={product.images}
@@ -292,11 +294,6 @@ const ProductPage = () => {
             activeThumb={activeThumb}
             viewIndex={viewIndex}
             direction={direction}
-            onThumbClick={(i) => {
-              setDirection(i > activeThumb ? 1 : -1);
-              setActiveThumb(i);
-              setViewIndex(0);
-            }}
             onPrev={() => {
               setDirection(-1);
               if (isMock) {
@@ -315,6 +312,11 @@ const ProductPage = () => {
                 setActiveThumb((v) => (v + 1) % len);
               }
             }}
+            onThumbClick={(i) => {
+              setDirection(i > activeThumb ? 1 : -1);
+              setActiveThumb(i);
+              setViewIndex(0);
+            }}
             touchStartX={touchStartX}
           />
 
@@ -324,7 +326,7 @@ const ProductPage = () => {
               {product.categoryLabel}
             </p>
 
-            {refId && referrerMargin > 0 && (
+            {refId && (
               <div className="mt-3 flex items-center gap-2 px-3 py-1.5 rounded-md border border-gold/30 bg-gold/10 text-gold text-xs font-semibold uppercase tracking-wider shadow-gold w-fit">
                 <span>✨</span> Specially Curated Selection
               </div>
@@ -417,43 +419,14 @@ const ProductPage = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between items-center text-xs text-muted-foreground mb-1.5 font-medium">
-                      <span>Set Profit Margin</span>
-                      <span className="text-gold font-bold text-sm">+{formatINR(customMargin)}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1500"
-                        step="50"
-                        value={customMargin}
-                        onChange={(e) => setCustomMargin(Number(e.target.value))}
-                        className="flex-1 accent-gold cursor-ew-resize h-1.5 bg-gold/20 rounded-lg appearance-none"
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        value={customMargin}
-                        onChange={(e) => setCustomMargin(Math.max(0, Number(e.target.value)))}
-                        className="w-20 bg-background/50 border border-gold/25 rounded px-2.5 py-1 text-right text-xs text-foreground focus:outline-none focus:border-gold"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded bg-primary-dark/60 border border-gold/10 grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="p-3.5 rounded bg-primary-dark/60 border border-gold/10 grid grid-cols-2 gap-2 text-center text-xs">
                     <div>
-                      <p className="text-muted-foreground">Original Price</p>
+                      <p className="text-muted-foreground">Product Price</p>
                       <p className="font-bold text-foreground mt-1">{formatINR(product.price)}</p>
                     </div>
-                    <div className="border-x border-gold/15">
-                      <p className="text-gold">Your Earnings</p>
-                      <p className="font-bold text-gold mt-1">+{formatINR(customMargin)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Selling Price</p>
-                      <p className="font-bold text-foreground mt-1">{formatINR(product.price + customMargin)}</p>
+                    <div className="border-l border-gold/15">
+                      <p className="text-gold">Your Commission ({commissionRate}%)</p>
+                      <p className="font-bold text-gold mt-1">+{formatINR(commissionAmount)}</p>
                     </div>
                   </div>
 
@@ -464,8 +437,9 @@ const ProductPage = () => {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => {
-                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${user.reseller_code}&margin=${customMargin}`;
-                          const text = `Hey! Look at this gorgeous ${product.name} I curated for you at Pantix for just ${formatINR(product.price + customMargin)}! ✨ Check it out here: ${referralLink}`;
+                          const refCode = user.reseller_code || `RS${user.id}`;
+                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${refCode}`;
+                          const text = `Hey! Look at this gorgeous ${product.name} I curated for you at Pantix for just ${formatINR(product.price)}! ✨ Check it out here: ${referralLink}`;
                           window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
                         }}
                         className="flex items-center justify-center gap-2 px-3 py-2.5 rounded bg-[#25D366] hover:bg-[#20ba5a] text-white font-medium text-xs tracking-wide transition-colors"
@@ -478,7 +452,8 @@ const ProductPage = () => {
 
                       <button
                         onClick={() => {
-                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${user.reseller_code}&margin=${customMargin}`;
+                          const refCode = user.reseller_code || `RS${user.id}`;
+                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${refCode}`;
                           navigator.clipboard.writeText(referralLink);
                           toast.info("Instagram sharing works via DMs! Direct link copied to your clipboard. 💖");
                         }}
@@ -492,8 +467,9 @@ const ProductPage = () => {
 
                       <button
                         onClick={() => {
-                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${user.reseller_code}&margin=${customMargin}`;
-                          const text = `Take a look at the gorgeous ${product.name} at Pantix for only ${formatINR(product.price + customMargin)}!`;
+                          const refCode = user.reseller_code || `RS${user.id}`;
+                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${refCode}`;
+                          const text = `Take a look at the gorgeous ${product.name} at Pantix for only ${formatINR(product.price)}!`;
                           window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(text)}`, "_blank");
                         }}
                         className="flex items-center justify-center gap-2 px-3 py-2.5 rounded bg-[#0088cc] hover:bg-[#0077b5] text-white font-medium text-xs tracking-wide transition-colors"
@@ -506,7 +482,8 @@ const ProductPage = () => {
 
                       <button
                         onClick={async () => {
-                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${user.reseller_code}&margin=${customMargin}`;
+                          const refCode = user.reseller_code || `RS${user.id}`;
+                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${refCode}`;
                           try {
                             await navigator.clipboard.writeText(referralLink);
                             setCopied(true);
@@ -606,11 +583,10 @@ const ProductPage = () => {
               </p>
             </div>
 
-            <div className="mt-7 grid grid-cols-2 gap-3">
+            <div className="p-4 grid grid-cols-[1fr_1.5fr] gap-3">
               <button
-                onClick={() => addToCart(product.id, size, color, qty, refId ?? undefined, referrerMargin || undefined)}
-                disabled={!product.inStock}
-                className="px-6 py-3.5 border border-gold text-gold uppercase tracking-wide text-sm font-medium hover:bg-gold/10 disabled:opacity-50 transition-colors"
+                onClick={() => addToCart(product.id, size, color, qty, refId ?? undefined)}
+                className="flex items-center justify-center gap-2 rounded-xl border-2 border-gold/40 bg-transparent py-3.5 text-sm font-bold text-gold uppercase tracking-wider hover:bg-gold/5 transition-colors"
               >
                 Add to Cart
               </button>

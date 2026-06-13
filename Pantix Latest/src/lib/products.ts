@@ -42,6 +42,7 @@ export type Product = {
   colors?: { name: string; hex: string }[];
   isBudget?: boolean;
   isPopular?: boolean;
+  commission_rate?: number;
 };
 
 export const categories: { id: Category; label: string; image: string }[] = [
