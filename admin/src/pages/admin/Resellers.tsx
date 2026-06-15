@@ -26,7 +26,7 @@ type ModalMode = "create" | "edit";
 
 export default function Resellers() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"resellers" | "withdrawals">("resellers");
+  const [activeTab, setActiveTab] = useState<"resellers" | "requests" | "withdrawals">("resellers");
   
   // Custom confirmation modal state
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -292,6 +292,19 @@ export default function Resellers() {
           Active Resellers
         </button>
         <button
+          onClick={() => setActiveTab("requests")}
+          className={`pb-3 text-sm font-semibold tracking-wide border-b-2 transition-all flex items-center gap-2 ${
+            activeTab === "requests"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Reseller Requests
+          {resellers.filter((r: any) => r.status === "Pending").length > 0 && (
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
+          )}
+        </button>
+        <button
           onClick={() => setActiveTab("withdrawals")}
           className={`pb-3 text-sm font-semibold tracking-wide border-b-2 transition-all flex items-center gap-2 ${
             activeTab === "withdrawals"
@@ -313,11 +326,11 @@ export default function Resellers() {
           </div>
         ) : error ? (
           <div className="text-center py-12 text-destructive">Failed to load resellers</div>
-        ) : resellers.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">No resellers yet. Add your first partner!</div>
+        ) : resellers.filter((r: any) => r.status === "Active").length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">No active resellers yet. Add your first partner!</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(resellers as Reseller[]).map((r) => {
+            {(resellers as Reseller[]).filter((r: any) => r.status === "Active").map((r) => {
               const tierColor = tierColors[r.tier] || "#94A3B8";
               return (
                 <div key={r.id} className="card-lift bg-card rounded-2xl border border-border/50 shadow-card p-6">
@@ -366,21 +379,86 @@ export default function Resellers() {
                         <TrendingUp className="w-3 h-3" />
                         {r.status || "Active"}
                       </span>
-                      {r.status === "Pending" && (
-                        <Button 
-                          size="sm" 
-                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                          onClick={() => {
-                            updateMutation.mutate({
-                              id: r.id,
-                              payload: { status: "Active" }
-                            });
-                          }}
-                          disabled={updateMutation.isPending}
-                        >
-                          Approve
-                        </Button>
-                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : activeTab === "requests" ? (
+        isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-12 text-destructive">Failed to load reseller requests</div>
+        ) : resellers.filter((r: any) => r.status === "Pending").length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">No pending requests at the moment.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {(resellers as Reseller[]).filter((r: any) => r.status === "Pending").map((r) => {
+              const tierColor = tierColors[r.tier] || "#94A3B8";
+              return (
+                <div key={r.id} className="card-lift bg-card rounded-2xl border border-border/50 shadow-card p-6">
+                  <div className="flex items-start justify-between">
+                    <div
+                      className="w-12 h-12 rounded-xl grid place-items-center"
+                      style={{ background: `${tierColor}22` }}
+                    >
+                      <Network className="w-6 h-6" style={{ color: tierColor }} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(r.id, r.name)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold">{r.name}</h3>
+                  <p className="text-sm text-muted-foreground">{r.contact}</p>
+                  <div className="mt-3 flex items-center gap-1 text-sm text-muted-foreground">
+                    <MapPin className="w-4 h-4 flex-shrink-0" /> {r.region}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Requested Status</p>
+                      <p className="text-sm font-medium text-amber-500">Pending Approval</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="h-8 border-destructive text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          updateMutation.mutate({
+                            id: r.id,
+                            payload: { status: "Rejected" }
+                          });
+                        }}
+                        disabled={updateMutation.isPending}
+                      >
+                        Reject
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => {
+                          updateMutation.mutate({
+                            id: r.id,
+                            payload: { status: "Active" }
+                          });
+                        }}
+                        disabled={updateMutation.isPending}
+                      >
+                        Approve
+                      </Button>
                     </div>
                   </div>
                 </div>

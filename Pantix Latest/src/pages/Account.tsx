@@ -595,13 +595,27 @@ function ResellerTab() {
         </div>
 
         <div className="text-center pt-4">
-          <button
-            onClick={handleActivate}
-            disabled={loading}
-            className="btn-gold min-w-[200px]"
-          >
-            {loading ? "Activating..." : "Activate Reseller Mode 🚀"}
-          </button>
+          {user?.reseller_status === 'Pending' ? (
+            <div className="p-4 border border-amber-500/30 bg-amber-500/10 rounded-xl max-w-md mx-auto animate-fade-in">
+              <p className="text-amber-500 font-semibold mb-1">⏳ Request Pending Approval</p>
+              <p className="text-xs text-muted-foreground">Your request to become a reseller has been submitted successfully and is currently waiting for admin approval.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {user?.reseller_status === 'Rejected' && (
+                <p className="text-destructive text-xs font-semibold animate-fade-in">
+                  Your previous request was declined by the admin. You may try again.
+                </p>
+              )}
+              <button
+                onClick={handleActivate}
+                disabled={loading}
+                className="btn-gold min-w-[200px]"
+              >
+                {loading ? "Activating..." : "Activate Reseller Mode 🚀"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

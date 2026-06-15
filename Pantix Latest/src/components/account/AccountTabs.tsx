@@ -297,15 +297,34 @@ export function OrdersTab({
 
                 {o.status.toLowerCase() === "delivered" && (
                   <div className="mt-4 pt-3 border-t border-gold/15 flex justify-end">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStartReselling(o.id);
-                      }}
-                      className="px-4 py-2 bg-gold text-primary-foreground text-xs uppercase font-bold tracking-wider rounded-sm hover:bg-gold/90 transition"
-                    >
-                      Start Reselling
-                    </button>
+                    {user?.is_reseller ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = "/shop";
+                        }}
+                        className="px-4 py-2 bg-gold text-primary-foreground text-xs uppercase font-bold tracking-wider rounded-sm hover:bg-gold/90 transition"
+                      >
+                        Resell Products
+                      </button>
+                    ) : user?.reseller_status === 'Pending' ? (
+                      <button
+                        disabled
+                        className="px-4 py-2 bg-gold/50 text-primary-foreground/70 text-xs uppercase font-bold tracking-wider rounded-sm cursor-not-allowed"
+                      >
+                        Pending Approval
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartReselling(o.id);
+                        }}
+                        className="px-4 py-2 bg-gold text-primary-foreground text-xs uppercase font-bold tracking-wider rounded-sm hover:bg-gold/90 transition"
+                      >
+                        Start Reselling
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

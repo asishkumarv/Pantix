@@ -154,7 +154,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         if (data.success) {
           setUser(data.user);
-          toast.success("Reseller mode enabled! 🚀");
+          toast.success("Reseller request sent! 🚀", {
+            description: "Admin will review your request soon."
+          });
           return true;
         }
       }
