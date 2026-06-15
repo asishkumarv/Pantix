@@ -361,10 +361,27 @@ export default function Resellers() {
                       <p className="text-xs text-muted-foreground">Total sales</p>
                       <p className="text-lg font-bold">₹{Number(r.sales).toLocaleString()}</p>
                     </div>
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: r.status === "Active" ? "#10B981" : "#F59E0B" }}>
-                      <TrendingUp className="w-3 h-3" />
-                      {r.status || "Active"}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: r.status === "Active" ? "#10B981" : r.status === "Pending" ? "#F59E0B" : "#EF4444" }}>
+                        <TrendingUp className="w-3 h-3" />
+                        {r.status || "Active"}
+                      </span>
+                      {r.status === "Pending" && (
+                        <Button 
+                          size="sm" 
+                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                          onClick={() => {
+                            updateMutation.mutate({
+                              id: r.id,
+                              payload: { status: "Active" }
+                            });
+                          }}
+                          disabled={updateMutation.isPending}
+                        >
+                          Approve
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -561,6 +578,7 @@ export default function Resellers() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
                     <SelectItem value="Inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>

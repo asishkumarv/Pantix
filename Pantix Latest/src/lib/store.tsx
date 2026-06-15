@@ -44,6 +44,7 @@ export type User = {
   name: string;
   phone?: string;
   is_reseller?: boolean;
+  reseller_status?: string;
   reseller_code?: string;
   wallet_balance?: string | number;
 };

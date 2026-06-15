@@ -11,6 +11,8 @@ async function run() {
     await pool.query(`
       ALTER TABLE products ADD COLUMN IF NOT EXISTS commission_rate NUMERIC(5, 2) DEFAULT 0.00;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS reseller_code VARCHAR(50) UNIQUE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS reseller_status VARCHAR(50) DEFAULT 'None';
+
       
       CREATE TABLE IF NOT EXISTS order_commissions (
         id SERIAL PRIMARY KEY,

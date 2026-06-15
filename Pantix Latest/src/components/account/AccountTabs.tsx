@@ -191,12 +191,20 @@ export function OrdersTab({
   const navigate = useNavigate();
 
   const handleStartReselling = async (orderId: string) => {
+    if (user?.reseller_status === 'Pending') {
+      toast.info("Your reseller request is pending admin approval.");
+      return;
+    }
     if (!user?.is_reseller) {
       const ok = await enableReseller();
       if (!ok) {
-        toast.error("Could not activate reseller mode");
+        toast.error("Could not send reseller request");
         return;
       }
+      toast.success("Reseller request sent! 🚀", {
+        description: "Admin will review your request soon."
+      });
+      return;
     }
     toast.success("Reseller mode active! 🚀", {
       description: "Select any product in the shop to set your custom margins and share referrals."

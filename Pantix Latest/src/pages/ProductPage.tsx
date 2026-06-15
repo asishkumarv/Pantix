@@ -81,7 +81,7 @@ const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const refId = searchParams.get("ref");
+  const refId = searchParams.get("rscode") || searchParams.get("ref");
 
   const { addToCart, toggleWishlist, isWished, user, products, getProduct, isLoadingProducts } = useStore();
   const product = useMemo(() => (id ? getProduct(id) : undefined), [id, getProduct]);
@@ -442,7 +442,7 @@ const ProductPage = () => {
                       <button
                         onClick={() => {
                           const refCode = user.reseller_code || `RS${user.id}`;
-                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${refCode}`;
+                          const referralLink = `${window.location.origin}/product/${product.id}?rscode=${refCode}`;
                           const text = `Hey! Look at this gorgeous ${product.name} I curated for you at Pantix for just ${formatINR(product.price)}! ✨ Check it out here: ${referralLink}`;
                           window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
                         }}
@@ -457,7 +457,7 @@ const ProductPage = () => {
                       <button
                         onClick={() => {
                           const refCode = user.reseller_code || `RS${user.id}`;
-                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${refCode}`;
+                          const referralLink = `${window.location.origin}/product/${product.id}?rscode=${refCode}`;
                           navigator.clipboard.writeText(referralLink);
                           toast.info("Instagram sharing works via DMs! Direct link copied to your clipboard. 💖");
                         }}
@@ -472,7 +472,7 @@ const ProductPage = () => {
                       <button
                         onClick={() => {
                           const refCode = user.reseller_code || `RS${user.id}`;
-                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${refCode}`;
+                          const referralLink = `${window.location.origin}/product/${product.id}?rscode=${refCode}`;
                           const text = `Take a look at the gorgeous ${product.name} at Pantix for only ${formatINR(product.price)}!`;
                           window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(text)}`, "_blank");
                         }}
@@ -487,7 +487,7 @@ const ProductPage = () => {
                       <button
                         onClick={async () => {
                           const refCode = user.reseller_code || `RS${user.id}`;
-                          const referralLink = `${window.location.origin}/product/${product.id}?ref=${refCode}`;
+                          const referralLink = `${window.location.origin}/product/${product.id}?rscode=${refCode}`;
                           try {
                             await navigator.clipboard.writeText(referralLink);
                             setCopied(true);

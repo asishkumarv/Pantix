@@ -15,10 +15,12 @@ export const getAllResellers = async (req, res) => {
           WHEN COALESCE((SELECT SUM(total) FROM orders WHERE reseller_id = users.id), 0.00) >= 5000 THEN 'Silver'
           ELSE 'Bronze'
         END as tier,
-        'Active' as status
+        COALESCE(reseller_status, 'Active') as status
       FROM users
-      WHERE is_reseller = TRUE
-      ORDER BY sales DESC
+      WHERE is_reseller = TRUE OR reseller_status = 'Pending'
+      ORDER BY 
+        CASE WHEN reseller_status = 'Pending' THEN 0 ELSE 1 END,
+        sales DESC
     `);
     res.json(result.rows);
   } catch (err) {
@@ -60,7 +62,7 @@ export const updateReseller = async (req, res) => {
   const { name, contact, region, status, tier } = req.body;
 
   try {
-    const check = await pool.query("SELECT * FROM users WHERE id = $1 AND is_reseller = TRUE", [id]);
+    const check = await pool.query("SELECT * FROM users WHERE id = $1 AND (is_reseller = TRUE OR reseller_status = 'Pending')", [id]);
     if (check.rows.length === 0) {
       return res.status(404).json({ error: "Reseller not found" });
     }
@@ -69,15 +71,20 @@ export const updateReseller = async (req, res) => {
     const newName = name !== undefined ? name : current.name;
     const newEmail = contact !== undefined ? contact : current.email;
     const newPhone = region !== undefined ? region : current.phone;
+    const newStatus = status || current.reseller_status || 'Active';
+    const newIsReseller = (newStatus === 'Active' || newStatus === 'Approved');
 
     const result = await pool.query(
       `UPDATE users SET
         name = $1,
         email = $2,
-        phone = $3
-      WHERE id = $4
-      RETURNING id, name, email as contact, phone as region`,
-      [newName, newEmail, newPhone, id]
+        phone = $3,
+        reseller_status = $4,
+        is_reseller = $5,
+        reseller_code = CASE WHEN $5 = TRUE THEN COALESCE(reseller_code, 'RS' || id) ELSE reseller_code END
+      WHERE id = $6
+      RETURNING id, name, email as contact, phone as region, reseller_status as status`,
+      [newName, newEmail, newPhone, newStatus, newIsReseller, id]
     );
 
     res.json({
