@@ -121,6 +121,19 @@ const ProductPage = () => {
     }
   }, [product]);
 
+  // Sync color when active thumb changes (image to color)
+  useEffect(() => {
+    if (product?.colors && !isMock) {
+      const activeImg = product.images?.[activeThumb];
+      if (activeImg) {
+        const matchingColor = product.colors.find((c: any) => c.image === activeImg);
+        if (matchingColor && matchingColor.name !== color) {
+          setColor(matchingColor.name);
+        }
+      }
+    }
+  }, [activeThumb, product, isMock]); // intentionally omitted color to avoid infinite loops
+
   useEffect(() => {
     if (!id) return;
     try {
@@ -338,7 +351,7 @@ const ProductPage = () => {
 
             <div className="mt-2 flex items-start justify-between gap-4">
               <h1 className="font-display text-3xl md:text-5xl text-foreground">
-                {product.name}
+                {product.name}{color ? ` - ${color}` : ""}
               </h1>
               <div className="flex items-center gap-1 md:gap-2 mt-1 md:mt-2">
                 <button
@@ -539,10 +552,20 @@ const ProductPage = () => {
                   Select Color: <span className="text-foreground">{color}</span>
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  {product.colors.map((c) => (
+                  {product.colors.map((c: any) => (
                     <button
                       key={c.name}
-                      onClick={() => setColor(c.name)}
+                      onClick={() => {
+                        setColor(c.name);
+                        if (!isMock && c.image && product.images) {
+                          const idx = product.images.indexOf(c.image);
+                          if (idx !== -1) {
+                            setDirection(idx > activeThumb ? 1 : -1);
+                            setActiveThumb(idx);
+                            setViewIndex(0);
+                          }
+                        }
+                      }}
                       title={c.name}
                       className={`h-9 w-9 rounded-full border-2 transition-all p-0.5 ${
                         color === c.name

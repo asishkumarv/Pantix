@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Network, MapPin, TrendingUp, X, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Plus, Network, MapPin, TrendingUp, X, Loader2, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
@@ -58,6 +58,7 @@ export default function Resellers() {
   const [rName, setRName] = useState("");
   const [rContact, setRContact] = useState("");
   const [rPassword, setRPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [rRegion, setRRegion] = useState("");
   const [rTier, setRTier] = useState("Bronze");
   const [rStatus, setRStatus] = useState("Active");
@@ -616,14 +617,24 @@ export default function Resellers() {
 
               <div className="space-y-2">
                 <Label htmlFor="rPassword">Password {modalMode === 'edit' && '(leave blank to keep unchanged)'}</Label>
-                <Input
-                  id="rPassword"
-                  type="password"
-                  value={rPassword}
-                  onChange={(e) => setRPassword(e.target.value)}
-                  placeholder="Enter password"
-                  required={modalMode === 'create'}
-                />
+                <div className="relative">
+                  <Input
+                    id="rPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={rPassword}
+                    onChange={(e) => setRPassword(e.target.value)}
+                    placeholder="Enter password"
+                    required={modalMode === 'create'}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">

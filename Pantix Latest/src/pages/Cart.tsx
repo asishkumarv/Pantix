@@ -11,12 +11,22 @@ const Cart = () => {
       const product = getProduct(c.id);
       if (!product) return null;
       const margin = c.reseller_margin ? Number(c.reseller_margin) : 0;
+      
+      let displayImage = product.image;
+      if (c.color && product.colors) {
+        const colorObj = product.colors.find((col: any) => col.name === c.color);
+        if (colorObj?.image) {
+           displayImage = colorObj.image;
+        }
+      }
+
       return {
         ...c,
         product: {
           ...product,
           price: product.price + margin,
         },
+        displayImage,
       };
     })
     .filter(
@@ -68,7 +78,7 @@ const Cart = () => {
                 >
                   <Link to={`/product/${item.id}`} className="shrink-0">
                     <img
-                      src={item.product.image}
+                      src={item.displayImage}
                       alt={item.product.name}
                       className="h-28 w-24 object-cover rounded-md"
                     />

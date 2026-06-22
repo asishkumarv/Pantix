@@ -67,7 +67,7 @@ export default function AddProduct() {
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
 
   // Colors
-  const [colors, setColors] = useState<{ name: string; hex: string }[]>([{ name: "", hex: "#000000" }]);
+  const [colors, setColors] = useState<{ name: string; hex: string; imageIndex?: string }[]>([{ name: "", hex: "#000000", imageIndex: "-1" }]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -107,8 +107,12 @@ export default function AddProduct() {
       if (product.images?.length) {
         const parsedImages = typeof product.images === "string" ? JSON.parse(product.images) : product.images;
         if (Array.isArray(parsedImages)) {
+          const extras = parsedImages[0] === product.image 
+            ? parsedImages.slice(1) 
+            : parsedImages.filter((img: string) => img !== product.image);
+            
           setExtraImages(
-            parsedImages.map((img: string) => ({
+            extras.map((img: string) => ({
               id: Math.random().toString(),
               url: img,
               file: null,
@@ -122,7 +126,22 @@ export default function AddProduct() {
       if (product.colors) {
         try {
           const parsed = typeof product.colors === "string" ? JSON.parse(product.colors) : product.colors;
-          if (Array.isArray(parsed)) setColors(parsed);
+          if (Array.isArray(parsed)) {
+             setColors(parsed.map((c: any) => {
+               let imageIndex = "-1";
+               if (c.image && product.images) {
+                 let imagesArray = product.images;
+                 if (typeof imagesArray === "string") {
+                   try { imagesArray = JSON.parse(imagesArray); } catch {}
+                 }
+                 if (Array.isArray(imagesArray)) {
+                   const idx = imagesArray.indexOf(c.image);
+                   if (idx !== -1) imageIndex = idx.toString();
+                 }
+               }
+               return { ...c, imageIndex };
+             }));
+          }
         } catch {
           // ignore parse errors
         }
@@ -210,8 +229,16 @@ export default function AddProduct() {
         );
       }
 
-      const validColors = colors.filter((c) => c.name.trim());
       const validImages = [finalImageUrl, ...uploadedExtras].filter(Boolean);
+      const validColors = colors.filter((c) => c.name.trim()).map((c) => {
+        const cObj: any = { name: c.name, hex: c.hex };
+        if (c.imageIndex !== "-1" && c.imageIndex !== undefined) {
+          const idx = parseInt(c.imageIndex, 10);
+          if (validImages[idx]) cObj.image = validImages[idx];
+        }
+        return cObj;
+      });
+
       // Auto-set category label from selected category name
       const catObj = (categories as any[]).find((c: any) => c.id === category);
       saveMutation.mutate({
@@ -410,7 +437,7 @@ export default function AddProduct() {
           <section className="bg-card rounded-2xl shadow-card border border-border/50 p-5 lg:p-6 space-y-4">
             <h3 className="font-semibold">Color variants</h3>
             {colors.map((c, i) => (
-              <div key={i} className="flex gap-2 items-center">
+              <div key={i} className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
                 <input
                   type="color"
                   value={c.hex}
@@ -419,7 +446,7 @@ export default function AddProduct() {
                     updated[i] = { ...updated[i], hex: e.target.value };
                     setColors(updated);
                   }}
-                  className="w-10 h-10 rounded-lg border border-border cursor-pointer"
+                  className="w-10 h-10 rounded-lg border border-border cursor-pointer shrink-0"
                 />
                 <Input
                   value={c.name}
@@ -429,12 +456,52 @@ export default function AddProduct() {
                     setColors(updated);
                   }}
                   placeholder="Color name (e.g. Emerald)"
-                  className="flex-1"
+                  className="flex-1 min-w-[120px]"
                 />
+                <Select
+                  value={c.imageIndex}
+                  onValueChange={(val) => {
+                    const updated = [...colors];
+                    updated[i] = { ...updated[i], imageIndex: val };
+                    setColors(updated);
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-[180px] shrink-0 h-10">
+                    <SelectValue placeholder="Link image" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="-1">No image</SelectItem>
+                    <SelectItem value="0">
+                      <div className="flex items-center gap-2">
+                        {previewSrc ? (
+                          <img src={previewSrc} alt="Primary" className="w-5 h-5 object-cover rounded-sm border border-border" />
+                        ) : (
+                          <div className="w-5 h-5 bg-muted rounded-sm border border-border" />
+                        )}
+                        <span>Primary Image</span>
+                      </div>
+                    </SelectItem>
+                    {extraImages.map((item, idx) => {
+                      const src = item.file ? URL.createObjectURL(item.file) : getPreviewImage(item.url);
+                      return (
+                        <SelectItem key={idx} value={(idx + 1).toString()}>
+                          <div className="flex items-center gap-2">
+                            {src ? (
+                              <img src={src} alt={`Extra ${idx + 1}`} className="w-5 h-5 object-cover rounded-sm border border-border" />
+                            ) : (
+                              <div className="w-5 h-5 bg-muted rounded-sm border border-border" />
+                            )}
+                            <span>Extra Image {idx + 1}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
                 <Button
                   type="button" variant="ghost" size="icon"
                   onClick={() => setColors(colors.filter((_, idx) => idx !== i))}
-                  className="text-destructive hover:text-destructive/80"
+                  className="text-destructive hover:text-destructive/80 shrink-0"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -442,7 +509,7 @@ export default function AddProduct() {
             ))}
             <Button
               type="button" variant="outline" size="sm"
-              onClick={() => setColors([...colors, { name: "", hex: "#000000" }])}
+              onClick={() => setColors([...colors, { name: "", hex: "#000000", imageIndex: "-1" }])}
             >
               <Plus className="w-4 h-4" /> Add color
             </Button>

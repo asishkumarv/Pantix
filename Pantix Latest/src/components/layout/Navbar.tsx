@@ -364,7 +364,7 @@ export function Navbar() {
 
                 <div className="mt-7 flex gap-3">
                   <a
-                    href="https://wa.me/919999999999"
+                    href="https://wa.me/919640369511"
                     target="_blank"
                     rel="noreferrer"
                     className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-md border border-gold/50 text-white hover:text-gold hover:bg-gold/10 transition"

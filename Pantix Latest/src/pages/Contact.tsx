@@ -15,14 +15,11 @@ const Contact = () => {
 
         <div className="mt-12 grid md:grid-cols-2 gap-8 lg:gap-12 w-full">
           <div className="space-y-5">
-            <Item icon={MapPin} title="Studio">
-              123 Royal Lane, Mumbai 400001, India
-            </Item>
             <Item icon={Mail} title="Email">
-              hello@pantix.world
+              info@pantix.in
             </Item>
             <Item icon={MessageCircle} title="WhatsApp">
-              +91 99999 99999
+              +91 9640369511
             </Item>
             <Item icon={Instagram} title="Instagram">
               @pantix.world

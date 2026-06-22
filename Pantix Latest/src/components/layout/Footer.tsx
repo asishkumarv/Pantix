@@ -70,23 +70,22 @@ export function Footer() {
             Reach Us
           </h4>
           <ul className="space-y-3 text-sm text-muted-foreground">
-            <li className="flex gap-2"><MapPin className="h-4 w-4 text-gold mt-0.5" /><span>Mumbai, India</span></li>
-            <li className="flex gap-2"><Mail className="h-4 w-4 text-gold mt-0.5" /><span>hello@pantix.world</span></li>
+            <li className="flex gap-2"><Mail className="h-4 w-4 text-gold mt-0.5" /><span>info@pantix.in</span></li>
+            <li className="flex gap-2"><MessageCircle className="h-4 w-4 text-gold mt-0.5" /><span>+91 9640369511</span></li>
             <li className="flex gap-3 pt-1">
               <a
-                href="https://wa.me/919999999999"
+                href="https://wa.me/919640369511"
                 className="text-gold hover:text-primary-glow"
                 aria-label="WhatsApp"
               >
-                <MessageCircle className="h-4 w-4" />
               </a>
-              <a
+              {/* <a
                 href="https://instagram.com"
                 className="text-gold hover:text-primary-glow"
                 aria-label="Instagram"
               >
                 <Instagram className="h-4 w-4" />
-              </a>
+              </a> */}
             </li>
           </ul>
         </div>

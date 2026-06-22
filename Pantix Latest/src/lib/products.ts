@@ -39,7 +39,11 @@ export type Product = {
   /** Optional unit count remaining. Used for "Only N left" UI. */
   stock?: number;
   badge?: string;
-  colors?: { name: string; hex: string }[];
+  colors?: {
+    name: string;
+    hex: string;
+    image?: string;
+  }[];
   isBudget?: boolean;
   isPopular?: boolean;
   commission_rate?: number;
