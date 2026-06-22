@@ -77,7 +77,8 @@ type StoreCtx = {
   register: (
     name: string,
     email: string,
-    password: string
+    password: string,
+    phone?: string
   ) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
   updateProfile: (patch: Partial<User>) => void;
@@ -333,12 +334,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (name: string, email: string, password: string) => {
+    async (name: string, email: string, password: string, phone?: string) => {
       try {
         const response = await fetch(`${API_URL}/api/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password }),
+          body: JSON.stringify({ name, email, password, phone }),
         });
         const data = await response.json();
         if (!response.ok) {

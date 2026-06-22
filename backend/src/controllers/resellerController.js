@@ -8,7 +8,8 @@ export const getAllResellers = async (req, res) => {
         id,
         name,
         email as contact,
-        COALESCE(phone, 'India') as region,
+        phone,
+        COALESCE(region, 'India') as region,
         COALESCE((SELECT SUM(total) FROM orders WHERE reseller_id = users.id), 0.00) as sales,
         CASE 
           WHEN COALESCE((SELECT SUM(total) FROM orders WHERE reseller_id = users.id), 0.00) >= 50000 THEN 'Platinum'
@@ -31,7 +32,7 @@ export const getAllResellers = async (req, res) => {
 };
 
 export const createReseller = async (req, res) => {
-  const { name, contact, region, password, tier, status } = req.body;
+  const { name, contact, phone, region, password, tier, status } = req.body;
 
   if (!name || !contact) {
     return res.status(400).json({ error: "Name and contact email are required" });
@@ -49,6 +50,7 @@ export const createReseller = async (req, res) => {
         name, 
         email, 
         phone, 
+        region,
         password_hash, 
         role, 
         status, 
@@ -57,15 +59,17 @@ export const createReseller = async (req, res) => {
         tier,
         reseller_status
        )
-       VALUES ($1, $2, $3, $4, 'reseller', 'Active', TRUE, 0.00, $5, $6)
+       VALUES ($1, $2, $3, $4, $5, 'reseller', 'Active', TRUE, 0.00, $6, $7)
        ON CONFLICT (email) DO UPDATE SET 
          is_reseller = TRUE, 
          password_hash = EXCLUDED.password_hash,
          role = 'reseller',
          tier = EXCLUDED.tier,
-         reseller_status = EXCLUDED.reseller_status
-       RETURNING id, name, email as contact, phone as region`,
-      [name, contact.toLowerCase(), region || null, passwordHash, tier || 'Bronze', status || 'Active']
+         reseller_status = EXCLUDED.reseller_status,
+         phone = EXCLUDED.phone,
+         region = EXCLUDED.region
+       RETURNING id, name, email as contact, phone, region`,
+      [name, contact.toLowerCase(), phone || null, region || null, passwordHash, tier || 'Bronze', status || 'Active']
     );
     
     const newId = result.rows[0].id;
@@ -88,7 +92,7 @@ export const createReseller = async (req, res) => {
 
 export const updateReseller = async (req, res) => {
   const { id } = req.params;
-  const { name, contact, region, status, tier, password } = req.body;
+  const { name, contact, phone, region, status, tier, password } = req.body;
 
   try {
     const check = await pool.query("SELECT * FROM users WHERE id = $1 AND (is_reseller = TRUE OR reseller_status = 'Pending')", [id]);
@@ -99,7 +103,8 @@ export const updateReseller = async (req, res) => {
     const current = check.rows[0];
     const newName = name !== undefined ? name : current.name;
     const newEmail = contact !== undefined ? contact : current.email;
-    const newPhone = region !== undefined ? region : current.phone;
+    const newPhone = phone !== undefined ? phone : current.phone;
+    const newRegion = region !== undefined ? region : current.region;
     const newStatus = status || current.reseller_status || 'Active';
     const newIsReseller = (newStatus === 'Active' || newStatus === 'Approved');
     
@@ -113,13 +118,14 @@ export const updateReseller = async (req, res) => {
         name = $1,
         email = $2,
         phone = $3,
-        reseller_status = $4,
-        is_reseller = $5,
-        password_hash = $6,
-        reseller_code = CASE WHEN $5 = TRUE THEN COALESCE(reseller_code, 'RS' || id) ELSE reseller_code END
-      WHERE id = $7
-      RETURNING id, name, email as contact, phone as region, reseller_status as status`,
-      [newName, newEmail, newPhone, newStatus, newIsReseller, newPasswordHash, id]
+        region = $4,
+        reseller_status = $5,
+        is_reseller = $6,
+        password_hash = $7,
+        reseller_code = CASE WHEN $6 = TRUE THEN COALESCE(reseller_code, 'RS' || id) ELSE reseller_code END
+      WHERE id = $8
+      RETURNING id, name, email as contact, phone, region, reseller_status as status`,
+      [newName, newEmail, newPhone, newRegion, newStatus, newIsReseller, newPasswordHash, id]
     );
 
     res.json({

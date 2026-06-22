@@ -17,6 +17,7 @@ type Reseller = {
   name: string;
   contact: string | null;
   region: string | null;
+  phone: string | null;
   sales: number;
   tier: string;
   status: string;
@@ -57,6 +58,7 @@ export default function Resellers() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rName, setRName] = useState("");
   const [rContact, setRContact] = useState("");
+  const [rPhone, setRPhone] = useState("");
   const [rPassword, setRPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rRegion, setRRegion] = useState("");
@@ -128,6 +130,7 @@ export default function Resellers() {
   const resetForm = () => {
     setRName("");
     setRContact("");
+    setRPhone("");
     setRPassword("");
     setRRegion("");
     setRTier("Bronze");
@@ -146,6 +149,7 @@ export default function Resellers() {
     setEditingId(reseller.id);
     setRName(reseller.name);
     setRContact(reseller.contact ?? "");
+    setRPhone(reseller.phone ?? "");
     setRPassword(""); // don't pre-fill password on edit
     setRRegion(reseller.region ?? "");
     setRTier(reseller.tier || "Bronze");
@@ -231,6 +235,7 @@ export default function Resellers() {
         payload: {
           name: rName,
           contact: rContact,
+          phone: rPhone,
           password: rPassword ? rPassword : undefined,
           region: rRegion,
           tier: rTier,
@@ -244,6 +249,7 @@ export default function Resellers() {
       id: `R-${Date.now()}`,
       name: rName,
       contact: rContact,
+      phone: rPhone,
       password: rPassword,
       region: rRegion,
       tier: rTier,
@@ -368,6 +374,7 @@ export default function Resellers() {
                   </div>
                   <h3 className="mt-4 text-lg font-semibold">{r.name}</h3>
                   <p className="text-sm text-muted-foreground">{r.contact}</p>
+                  {r.phone && <p className="text-sm text-muted-foreground">{r.phone}</p>}
                   <div className="mt-3 flex items-center gap-1 text-sm text-muted-foreground">
                     <MapPin className="w-4 h-4 flex-shrink-0" /> {r.region}
                   </div>
@@ -611,6 +618,18 @@ export default function Resellers() {
                   value={rContact}
                   onChange={(e) => setRContact(e.target.value)}
                   placeholder="ops@example.com"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="rPhone">Phone Number *</Label>
+                <Input
+                  id="rPhone"
+                  type="tel"
+                  value={rPhone}
+                  onChange={(e) => setRPhone(e.target.value)}
+                  placeholder="9876543210"
                   required
                 />
               </div>

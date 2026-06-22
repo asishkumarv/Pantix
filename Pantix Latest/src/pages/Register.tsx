@@ -11,6 +11,7 @@ const Register = () => {
   const location = useLocation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,7 +27,7 @@ const Register = () => {
       return;
     }
     setLoading(true);
-    const res = await register(name.trim(), email.trim(), password);
+    const res = await register(name.trim(), email.trim(), password, phone.trim());
     setLoading(false);
     if (!res.ok) {
       toast.error(res.error ?? "Registration failed");
@@ -57,6 +58,13 @@ const Register = () => {
                 type="email"
                 value={email}
                 onChange={setEmail}
+                required
+              />
+              <Field
+                label="Phone Number"
+                type="tel"
+                value={phone}
+                onChange={setPhone}
                 required
               />
               <Field
