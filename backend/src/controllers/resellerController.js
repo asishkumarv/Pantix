@@ -31,7 +31,7 @@ export const getAllResellers = async (req, res) => {
 };
 
 export const createReseller = async (req, res) => {
-  const { name, contact, region, password } = req.body;
+  const { name, contact, region, password, tier, status } = req.body;
 
   if (!name || !contact) {
     return res.status(400).json({ error: "Name and contact email are required" });
@@ -45,18 +45,40 @@ export const createReseller = async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     
     const result = await pool.query(
-      `INSERT INTO users (name, email, phone, password_hash, role, status, is_reseller, wallet_balance)
-       VALUES ($1, $2, $3, $4, 'customer', 'Active', TRUE, 0.00)
-       ON CONFLICT (email) DO UPDATE SET is_reseller = TRUE, password_hash = EXCLUDED.password_hash
+      `INSERT INTO users (
+        name, 
+        email, 
+        phone, 
+        password_hash, 
+        role, 
+        status, 
+        is_reseller, 
+        wallet_balance,
+        tier,
+        reseller_status
+       )
+       VALUES ($1, $2, $3, $4, 'reseller', 'Active', TRUE, 0.00, $5, $6)
+       ON CONFLICT (email) DO UPDATE SET 
+         is_reseller = TRUE, 
+         password_hash = EXCLUDED.password_hash,
+         role = 'reseller',
+         tier = EXCLUDED.tier,
+         reseller_status = EXCLUDED.reseller_status
        RETURNING id, name, email as contact, phone as region`,
-      [name, contact.toLowerCase(), region || null, passwordHash]
+      [name, contact.toLowerCase(), region || null, passwordHash, tier || 'Bronze', status || 'Active']
+    );
+    
+    const newId = result.rows[0].id;
+    await pool.query(
+      `UPDATE users SET reseller_code = COALESCE(reseller_code, 'RS' || $1) WHERE id = $1`,
+      [newId]
     );
     
     res.status(201).json({
       ...result.rows[0],
       sales: 0.00,
-      tier: "Bronze",
-      status: "Active"
+      tier: tier || "Bronze",
+      status: status || "Active"
     });
   } catch (err) {
     console.error("CreateReseller error:", err);
