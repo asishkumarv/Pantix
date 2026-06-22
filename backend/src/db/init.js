@@ -84,6 +84,8 @@ async function initDB() {
       ALTER TABLE products ADD COLUMN IF NOT EXISTS is_budget BOOLEAN DEFAULT FALSE;
       ALTER TABLE products ADD COLUMN IF NOT EXISTS is_popular BOOLEAN DEFAULT FALSE;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS addresses JSONB DEFAULT '[]'::jsonb;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(10);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp_expiry TIMESTAMP WITH TIME ZONE;
     `);
     console.log("Database tables initialized successfully.");
     process.exit(0);

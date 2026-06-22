@@ -1,19 +1,12 @@
 import { useState, FormEvent, useEffect } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Sparkles, Mail, Lock, Eye, EyeOff, Loader2, KeyRound } from "lucide-react";
+import { Sparkles, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 export default function Login() {
   const { user, login, logout } = useAuth();
@@ -25,26 +18,6 @@ export default function Login() {
   const [password, setPassword] = useState("admin123");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Forgot password modal state
-  const [forgotOpen, setForgotOpen] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotLoading, setForgotLoading] = useState(false);
-
-  const handleForgotSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!forgotEmail.trim()) {
-      toast.error("Please enter your email");
-      return;
-    }
-    setForgotLoading(true);
-    // Mock API call to simulate sending password reset email
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setForgotLoading(false);
-    toast.success(`Password reset instructions sent to ${forgotEmail}! 🔑`);
-    setForgotOpen(false);
-    setForgotEmail("");
-  };
 
   // Clear any stale/expired tokens when the login page loads
   useEffect(() => {
@@ -136,16 +109,12 @@ export default function Login() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForgotEmail(email || "");
-                    setForgotOpen(true);
-                  }}
+                <Link
+                  to="/forgot-password"
                   className="text-xs text-primary hover:underline"
                 >
                   Forgot?
-                </button>
+                </Link>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -175,64 +144,6 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Forgot Password Dialog */}
-      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
-        <DialogContent className="bg-gradient-to-b from-[#0b221cb8] to-[#081c16d1] border-border/50 text-foreground shadow-2xl backdrop-blur-md max-w-md rounded-2xl p-6">
-          <DialogHeader className="flex flex-col items-center text-center space-y-4">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <KeyRound className="w-6 h-6" />
-            </div>
-            <div className="space-y-1">
-              <DialogTitle className="text-xl font-bold tracking-tight text-white font-display">
-                Forgot Password
-              </DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
-                Enter your email address and we'll send you instructions to reset your password.
-              </DialogDescription>
-            </div>
-          </DialogHeader>
-
-          <form onSubmit={handleForgotSubmit} className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="forgot-email">Email Address</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="forgot-email"
-                  type="email"
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  required
-                  className="pl-10 h-11 bg-background/50"
-                  placeholder="admin@pantix.com"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 bg-secondary hover:bg-secondary/80 border-border/50 text-white font-semibold h-11 rounded-xl"
-                onClick={() => setForgotOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={forgotLoading}
-                className="flex-1 bg-primary-gradient text-white shadow-glow hover:opacity-90 transition-smooth font-semibold h-11 rounded-xl"
-              >
-                {forgotLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  "Send Instructions"
-                )}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

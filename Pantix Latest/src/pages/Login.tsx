@@ -48,17 +48,24 @@ const Login = () => {
                 onChange={setEmail}
                 required
               />
-              <Field
-                label="Password"
-                type="password"
-                value={password}
-                onChange={setPassword}
-                required
-              />
+              <div>
+                <Field
+                  label="Password"
+                  type="password"
+                  value={password}
+                  onChange={setPassword}
+                  required
+                />
+                <div className="flex justify-end mt-1">
+                  <Link to={`/forgot-password${location.search}`} className="text-xs text-gold/80 hover:text-primary-glow">
+                    Forgot password?
+                  </Link>
+                </div>
+              </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-gold w-full disabled:opacity-60"
+                className="btn-gold w-full disabled:opacity-60 mt-4"
               >
                 {loading ? "Signing in…" : "Sign In"}
               </button>

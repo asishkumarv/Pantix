@@ -1,11 +1,14 @@
 import express from "express";
-import { register, login, getMe, createAdmin, enableResellerMode, changePassword, addAddress, removeAddress } from "../controllers/authController.js";
+import { register, login, getMe, createAdmin, enableResellerMode, changePassword, addAddress, removeAddress, forgotPassword, verifyOtp, resetPassword } from "../controllers/authController.js";
 import { authenticateToken, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
 router.post("/register", register);
 router.post("/login", login);
+router.post("/forgot-password", forgotPassword);
+router.post("/verify-otp", verifyOtp);
+router.post("/reset-password", resetPassword);
 router.get("/me", authenticateToken, getMe);
 router.post("/create-admin", authenticateToken, requireAdmin, createAdmin);
 router.put("/reseller/enable", authenticateToken, enableResellerMode);
