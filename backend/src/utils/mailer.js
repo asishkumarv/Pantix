@@ -1,7 +1,11 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import dns from "dns";
 
 dotenv.config();
+
+// Force IPv4 resolution to prevent ENETUNREACH errors on platforms like Render that don't support outbound IPv6
+dns.setDefaultResultOrder("ipv4first");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
