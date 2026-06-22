@@ -681,19 +681,21 @@ export default function Resellers() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={rStatus} onValueChange={setRStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {modalMode === "edit" && (
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select value={rStatus} onValueChange={setRStatus}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-2">
                 <Button
