@@ -20,6 +20,7 @@ type Reseller = {
   sales: number;
   tier: string;
   status: string;
+  password?: string;
 };
 
 type ModalMode = "create" | "edit";
@@ -56,8 +57,8 @@ export default function Resellers() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rName, setRName] = useState("");
   const [rContact, setRContact] = useState("");
+  const [rPassword, setRPassword] = useState("");
   const [rRegion, setRRegion] = useState("");
-  const [rSales, setRSales] = useState("0");
   const [rTier, setRTier] = useState("Bronze");
   const [rStatus, setRStatus] = useState("Active");
 
@@ -126,8 +127,8 @@ export default function Resellers() {
   const resetForm = () => {
     setRName("");
     setRContact("");
+    setRPassword("");
     setRRegion("");
-    setRSales("0");
     setRTier("Bronze");
     setRStatus("Active");
     setEditingId(null);
@@ -144,8 +145,8 @@ export default function Resellers() {
     setEditingId(reseller.id);
     setRName(reseller.name);
     setRContact(reseller.contact ?? "");
+    setRPassword(""); // don't pre-fill password on edit
     setRRegion(reseller.region ?? "");
-    setRSales(String(Number(reseller.sales || 0)));
     setRTier(reseller.tier || "Bronze");
     setRStatus(reseller.status || "Active");
     setShowModal(true);
@@ -222,7 +223,6 @@ export default function Resellers() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const sales = Number(rSales) || 0;
 
     if (modalMode === "edit" && editingId) {
       updateMutation.mutate({
@@ -230,9 +230,9 @@ export default function Resellers() {
         payload: {
           name: rName,
           contact: rContact,
+          password: rPassword ? rPassword : undefined,
           region: rRegion,
           tier: rTier,
-          sales,
           status: rStatus,
         },
       });
@@ -243,11 +243,12 @@ export default function Resellers() {
       id: `R-${Date.now()}`,
       name: rName,
       contact: rContact,
+      password: rPassword,
       region: rRegion,
       tier: rTier,
-      sales,
       status: rStatus,
-    });
+      sales: 0,
+    } as any);
   };
 
   const handleDelete = (id: string, name: string) => {
@@ -591,7 +592,7 @@ export default function Resellers() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="rName">Business / Contact name *</Label>
+                <Label htmlFor="rName">Name (business name/name) *</Label>
                 <Input
                   id="rName"
                   value={rName}
@@ -602,34 +603,36 @@ export default function Resellers() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="rContact">Email / Phone</Label>
+                <Label htmlFor="rContact">Mail ID *</Label>
                 <Input
                   id="rContact"
+                  type="email"
                   value={rContact}
                   onChange={(e) => setRContact(e.target.value)}
                   placeholder="ops@example.com"
+                  required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="rRegion">Region / City</Label>
+                <Label htmlFor="rPassword">Password {modalMode === 'edit' && '(leave blank to keep unchanged)'}</Label>
+                <Input
+                  id="rPassword"
+                  type="password"
+                  value={rPassword}
+                  onChange={(e) => setRPassword(e.target.value)}
+                  placeholder="Enter password"
+                  required={modalMode === 'create'}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="rRegion">City</Label>
                 <Input
                   id="rRegion"
                   value={rRegion}
                   onChange={(e) => setRRegion(e.target.value)}
                   placeholder="Mumbai"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="rSales">Total sales</Label>
-                <Input
-                  id="rSales"
-                  type="number"
-                  min="0"
-                  value={rSales}
-                  onChange={(e) => setRSales(e.target.value)}
-                  placeholder="0"
                 />
               </div>
 

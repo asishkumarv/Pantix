@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import bcrypt from "bcryptjs";
 
 export const getAllResellers = async (req, res) => {
   try {
@@ -30,19 +31,25 @@ export const getAllResellers = async (req, res) => {
 };
 
 export const createReseller = async (req, res) => {
-  const { name, contact, region } = req.body;
+  const { name, contact, region, password } = req.body;
 
   if (!name || !contact) {
     return res.status(400).json({ error: "Name and contact email are required" });
   }
+  
+  if (!password) {
+    return res.status(400).json({ error: "Password is required" });
+  }
 
   try {
+    const passwordHash = await bcrypt.hash(password, 10);
+    
     const result = await pool.query(
       `INSERT INTO users (name, email, phone, password_hash, role, status, is_reseller, wallet_balance)
-       VALUES ($1, $2, $3, '$2b$10$SeedHashedPasswordPlaceholderString123', 'customer', 'Active', TRUE, 0.00)
-       ON CONFLICT (email) DO UPDATE SET is_reseller = TRUE
+       VALUES ($1, $2, $3, $4, 'customer', 'Active', TRUE, 0.00)
+       ON CONFLICT (email) DO UPDATE SET is_reseller = TRUE, password_hash = EXCLUDED.password_hash
        RETURNING id, name, email as contact, phone as region`,
-      [name, contact.toLowerCase(), region || null]
+      [name, contact.toLowerCase(), region || null, passwordHash]
     );
     
     res.status(201).json({
@@ -59,7 +66,7 @@ export const createReseller = async (req, res) => {
 
 export const updateReseller = async (req, res) => {
   const { id } = req.params;
-  const { name, contact, region, status, tier } = req.body;
+  const { name, contact, region, status, tier, password } = req.body;
 
   try {
     const check = await pool.query("SELECT * FROM users WHERE id = $1 AND (is_reseller = TRUE OR reseller_status = 'Pending')", [id]);
@@ -73,6 +80,11 @@ export const updateReseller = async (req, res) => {
     const newPhone = region !== undefined ? region : current.phone;
     const newStatus = status || current.reseller_status || 'Active';
     const newIsReseller = (newStatus === 'Active' || newStatus === 'Approved');
+    
+    let newPasswordHash = current.password_hash;
+    if (password) {
+      newPasswordHash = await bcrypt.hash(password, 10);
+    }
 
     const result = await pool.query(
       `UPDATE users SET
@@ -81,10 +93,11 @@ export const updateReseller = async (req, res) => {
         phone = $3,
         reseller_status = $4,
         is_reseller = $5,
+        password_hash = $6,
         reseller_code = CASE WHEN $5 = TRUE THEN COALESCE(reseller_code, 'RS' || id) ELSE reseller_code END
-      WHERE id = $6
+      WHERE id = $7
       RETURNING id, name, email as contact, phone as region, reseller_status as status`,
-      [newName, newEmail, newPhone, newStatus, newIsReseller, id]
+      [newName, newEmail, newPhone, newStatus, newIsReseller, newPasswordHash, id]
     );
 
     res.json({

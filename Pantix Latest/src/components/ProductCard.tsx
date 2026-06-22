@@ -1,5 +1,5 @@
 import { Link } from "@/lib/router-compat";
-import { Heart, ShoppingBag } from "lucide-react";
+import { Heart, ShoppingBag, Trash2 } from "lucide-react";
 import type { Product } from "@/lib/products";
 import { formatINR, useStore } from "@/lib/store";
 import { motion } from "framer-motion";
@@ -8,9 +8,11 @@ import { useState } from "react";
 export function ProductCard({
   product,
   index = 0,
+  isWishlist = false,
 }: {
   product: Product;
   index?: number;
+  isWishlist?: boolean;
 }) {
   const { isWished, toggleWishlist, addToCart } = useStore();
   const wished = isWished(product.id);
@@ -82,16 +84,22 @@ export function ProductCard({
       <button
         onClick={(e) => {
           e.preventDefault();
-          if (wished) {
+          if (isWishlist) {
+            toggleWishlist(product.id);
+          } else if (wished) {
             setShowConfirm(true);
           } else {
             toggleWishlist(product.id);
           }
         }}
-        aria-label="Wishlist"
+        aria-label={isWishlist ? "Remove from wishlist" : "Wishlist"}
         className="absolute top-3 right-3 z-10 h-8 w-8 grid place-items-center rounded-full bg-emerald-deep/70 backdrop-blur border border-gold/30 text-gold hover:bg-gold hover:text-primary-foreground transition-colors"
       >
-        <Heart className={`h-4 w-4 ${wished ? "fill-current" : ""}`} />
+        {isWishlist ? (
+          <Trash2 className="h-4 w-4" />
+        ) : (
+          <Heart className={`h-4 w-4 ${wished ? "fill-current" : ""}`} />
+        )}
       </button>
 
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, ShoppingCart, Package, PlusSquare, Tags,
@@ -30,6 +30,17 @@ export default function AdminSidebar({ open, onClose }: Props) {
   const location = useLocation();
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
 
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   return (
     <>
       {/* Mobile overlay */}
@@ -43,8 +54,8 @@ export default function AdminSidebar({ open, onClose }: Props) {
 
       <aside
         className={cn(
-          "fixed lg:sticky top-0 left-0 z-50 h-screen w-[240px] shrink-0",
-          "bg-sidebar-gradient text-sidebar-foreground border-r border-sidebar-border",
+          "fixed lg:sticky top-0 left-0 z-50 h-[100dvh] w-[240px] shrink-0",
+          "bg-sidebar text-sidebar-foreground border-r border-sidebar-border",
           "flex flex-col transition-transform duration-300",
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}

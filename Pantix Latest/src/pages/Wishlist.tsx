@@ -30,7 +30,7 @@ const Wishlist = () => {
           </div>
         ) : (
           <div className="mt-10 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10">
-            {items.map((p, i) => p && <ProductCard key={p.id} product={p} index={i} />)}
+            {items.map((p, i) => p && <ProductCard key={p.id} product={p} index={i} isWishlist />)}
           </div>
         )}
       </div>
