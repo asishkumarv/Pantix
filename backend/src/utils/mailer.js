@@ -8,38 +8,40 @@ dotenv.config();
 dns.setDefaultResultOrder("ipv4first");
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: process.env.EMAIL_HOST || "smtp.titan.email",
   port: 465,
   secure: true,
   family: 4, // Force IPv4 routing
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
 export const sendOtpEmail = async (to, otp) => {
   const mailOptions = {
-    from: `"Pantix" <${process.env.SMTP_USER}>`,
+    from: `"Pantix" <${process.env.EMAIL_FROM}>`,
     to,
-    subject: "Your Pantix Password Reset Code",
+    subject: "Your Password Reset Code",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center;">
-        <h2 style="color: #D4AF37;">Pantix Password Reset</h2>
-        <p>You requested a password reset. Use the code below to reset your password. This code will expire in 15 minutes.</p>
-        <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 20px; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #333;">
-          ${otp}
+        <h2 style="color: #333;">Password Reset</h2>
+        <p style="color: #666; font-size: 16px;">You requested a password reset. Here is your 6-digit verification code:</p>
+        <div style="background-color: #f4f4f4; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 4px; color: #b8860b;">${otp}</span>
         </div>
-        <p style="margin-top: 20px; color: #6c757d; font-size: 14px;">If you did not request this, please ignore this email.</p>
+        <p style="color: #666; font-size: 14px;">This code will expire in 15 minutes.</p>
+        <p style="color: #999; font-size: 12px; margin-top: 40px;">If you didn't request this, please ignore this email.</p>
       </div>
     `,
   };
 
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`OTP sent successfully to ${to}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log("OTP Email sent: " + info.response);
+    return info;
   } catch (error) {
-    console.error(`Error sending OTP to ${to}:`, error);
+    console.error("Error sending OTP email:", error);
     throw error;
   }
 };
