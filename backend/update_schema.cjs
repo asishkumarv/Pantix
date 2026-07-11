@@ -32,6 +32,14 @@ async function run() {
         product_id VARCHAR(100),
         clicked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS uploads (
+        id SERIAL PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL UNIQUE,
+        mime_type VARCHAR(100) NOT NULL,
+        data BYTEA NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
     `);
     console.log('Database schema updated successfully.');
   } catch (err) {

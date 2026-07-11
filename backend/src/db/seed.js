@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { cloudinary } from "../config/cloudinary.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,18 +30,25 @@ async function uploadImageHelper(imageName, folder = "pantix") {
   }
   
   try {
-    const publicId = path.basename(finalImageName, path.extname(finalImageName));
-    console.log(`Uploading ${finalImageName} to Cloudinary folder ${folder} with public_id ${publicId}...`);
-    const result = await cloudinary.uploader.upload(filePath, {
-      folder,
-      public_id: publicId,
-      overwrite: true,
-      invalidate: true
-    });
-    console.log(`Uploaded: ${result.secure_url}`);
-    return result.secure_url;
+    const filename = `${folder}/${finalImageName}`;
+    console.log(`Seeding image ${finalImageName} into database uploads table with key: ${filename}`);
+    
+    const fileBuffer = fs.readFileSync(filePath);
+    let mimeType = "image/jpeg";
+    if (filePath.endsWith(".png")) mimeType = "image/png";
+    else if (filePath.endsWith(".webp")) mimeType = "image/webp";
+    else if (filePath.endsWith(".gif")) mimeType = "image/gif";
+    
+    await pool.query(
+      `INSERT INTO uploads (filename, mime_type, data)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (filename) DO NOTHING`,
+      [filename, mimeType, fileBuffer]
+    );
+    
+    return `/uploads/${filename}`;
   } catch (err) {
-    console.error(`Error uploading ${finalImageName}:`, err);
+    console.error(`Error uploading/seeding ${finalImageName}:`, err);
     return imageName;
   }
 }
@@ -333,6 +339,9 @@ const mockResellers = [
 async function seed() {
   try {
     console.log("Starting data seeding...");
+
+    console.log("Cleaning up existing data...");
+    await pool.query("TRUNCATE categories, products, uploads, users, orders, resellers, reviews CASCADE;");
 
     // 1. Seed Categories
     for (const c of categories) {

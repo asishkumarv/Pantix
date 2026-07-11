@@ -32,6 +32,14 @@ pool.on("error", (err) => {
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS reseller_id INT REFERENCES users(id) ON DELETE SET NULL;
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS reseller_commission NUMERIC(10, 2) DEFAULT 0.00;
 
+      CREATE TABLE IF NOT EXISTS uploads (
+        id SERIAL PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL UNIQUE,
+        mime_type VARCHAR(100) NOT NULL,
+        data BYTEA NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS withdrawal_requests (
         id SERIAL PRIMARY KEY,
         user_id INT REFERENCES users(id) ON DELETE CASCADE,

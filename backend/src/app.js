@@ -12,6 +12,8 @@ import resellerRoutes from "./routes/resellerRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 
+import pool from "./config/db.js";
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,6 +28,28 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Intercept requests to /uploads/* to serve them from PostgreSQL
+app.get("/uploads/*", async (req, res, next) => {
+  const filename = req.params[0];
+  if (!filename) return next();
+
+  try {
+    const result = await pool.query(
+      "SELECT mime_type, data FROM uploads WHERE filename = $1",
+      [filename]
+    );
+    if (result.rows.length > 0) {
+      const { mime_type, data } = result.rows[0];
+      res.setHeader("Content-Type", mime_type);
+      return res.send(data);
+    }
+  } catch (err) {
+    console.error("Error fetching file from database:", err);
+  }
+  next();
+});
+
 app.use("/uploads", express.static(path.resolve(__dirname, "..", "uploads")));
 
 // Routes
