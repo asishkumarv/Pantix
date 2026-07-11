@@ -251,6 +251,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }
         }
 
+        if (Array.isArray(parsedColors)) {
+          parsedColors = parsedColors.map((c: any) => ({
+            ...c,
+            image: c.image ? resolveImage(c.image) : undefined
+          }));
+        }
+
         // Lookup category by id/slug in backend response to resolve to its slug
         const dbCategory = rawCategories.find(
           (c: any) => c.id === p.category || c.slug === p.category
