@@ -43,6 +43,7 @@ export type Product = {
     name: string;
     hex: string;
     image?: string;
+    sizes?: { size: string; stock: number }[];
   }[];
   isBudget?: boolean;
   isPopular?: boolean;

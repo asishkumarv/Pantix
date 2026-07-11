@@ -67,7 +67,13 @@ export default function AddProduct() {
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
 
   // Colors
-  const [colors, setColors] = useState<{ name: string; hex: string; imageIndex?: string }[]>([{ name: "", hex: "#000000", imageIndex: "-1" }]);
+  interface ColorItem {
+    name: string;
+    hex: string;
+    imageIndex?: string;
+    sizes?: { size: string; stock: number }[];
+  }
+  const [colors, setColors] = useState<ColorItem[]>([{ name: "", hex: "#000000", imageIndex: "-1", sizes: [] }]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -139,7 +145,8 @@ export default function AddProduct() {
                    if (idx !== -1) imageIndex = idx.toString();
                  }
                }
-               return { ...c, imageIndex };
+               const sizes = Array.isArray(c.sizes) ? c.sizes.map((s: any) => ({ size: s.size, stock: Number(s.stock) })) : [];
+               return { ...c, imageIndex, sizes };
              }));
           }
         } catch {
@@ -230,12 +237,24 @@ export default function AddProduct() {
       }
 
       const validImages = [finalImageUrl, ...uploadedExtras].filter(Boolean);
+      let totalStock = 0;
       const validColors = colors.filter((c) => c.name.trim()).map((c) => {
         const cObj: any = { name: c.name, hex: c.hex };
         if (c.imageIndex !== "-1" && c.imageIndex !== undefined) {
           const idx = parseInt(c.imageIndex, 10);
           if (validImages[idx]) cObj.image = validImages[idx];
         }
+        
+        // Filter sizes list to only include sizes that are currently selected in selectedSizes
+        const validColorSizes = (c.sizes || [])
+          .filter((s: any) => selectedSizes.includes(s.size))
+          .map((s: any) => ({ size: s.size, stock: Number(s.stock) }));
+          
+        cObj.sizes = validColorSizes;
+        validColorSizes.forEach((s: any) => {
+          totalStock += s.stock;
+        });
+        
         return cObj;
       });
 
@@ -248,8 +267,8 @@ export default function AddProduct() {
         sku,
         price: Number(price),
         mrp: Number(mrp),
-        stock: Number(stock),
-        in_stock: Number(stock) > 0,
+        stock: validColors.length ? totalStock : Number(stock),
+        in_stock: (validColors.length ? totalStock : Number(stock)) > 0,
         status: active ? "Active" : "Draft",
         category,
         category_label: categoryLabel || catObj?.name || "",
@@ -437,79 +456,132 @@ export default function AddProduct() {
           <section className="bg-card rounded-2xl shadow-card border border-border/50 p-5 lg:p-6 space-y-4">
             <h3 className="font-semibold">Color variants</h3>
             {colors.map((c, i) => (
-              <div key={i} className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
-                <input
-                  type="color"
-                  value={c.hex}
-                  onChange={(e) => {
-                    const updated = [...colors];
-                    updated[i] = { ...updated[i], hex: e.target.value };
-                    setColors(updated);
-                  }}
-                  className="w-10 h-10 rounded-lg border border-border cursor-pointer shrink-0"
-                />
-                <Input
-                  value={c.name}
-                  onChange={(e) => {
-                    const updated = [...colors];
-                    updated[i] = { ...updated[i], name: e.target.value };
-                    setColors(updated);
-                  }}
-                  placeholder="Color name (e.g. Emerald)"
-                  className="flex-1 min-w-[120px]"
-                />
-                <Select
-                  value={c.imageIndex}
-                  onValueChange={(val) => {
-                    const updated = [...colors];
-                    updated[i] = { ...updated[i], imageIndex: val };
-                    setColors(updated);
-                  }}
-                >
-                  <SelectTrigger className="w-full sm:w-[180px] shrink-0 h-10">
-                    <SelectValue placeholder="Link image" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="-1">No image</SelectItem>
-                    <SelectItem value="0">
-                      <div className="flex items-center gap-2">
-                        {previewSrc ? (
-                          <img src={previewSrc} alt="Primary" className="w-5 h-5 object-cover rounded-sm border border-border" />
-                        ) : (
-                          <div className="w-5 h-5 bg-muted rounded-sm border border-border" />
-                        )}
-                        <span>Primary Image</span>
-                      </div>
-                    </SelectItem>
-                    {extraImages.map((item, idx) => {
-                      const src = item.file ? URL.createObjectURL(item.file) : getPreviewImage(item.url);
-                      return (
-                        <SelectItem key={idx} value={(idx + 1).toString()}>
-                          <div className="flex items-center gap-2">
-                            {src ? (
-                              <img src={src} alt={`Extra ${idx + 1}`} className="w-5 h-5 object-cover rounded-sm border border-border" />
-                            ) : (
-                              <div className="w-5 h-5 bg-muted rounded-sm border border-border" />
-                            )}
-                            <span>Extra Image {idx + 1}</span>
+              <div key={i} className="p-4 border border-border/60 rounded-xl bg-background/25 space-y-4 shadow-sm">
+                <div className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
+                  <input
+                    type="color"
+                    value={c.hex}
+                    onChange={(e) => {
+                      const updated = [...colors];
+                      updated[i] = { ...updated[i], hex: e.target.value };
+                      setColors(updated);
+                    }}
+                    className="w-10 h-10 rounded-lg border border-border cursor-pointer shrink-0"
+                  />
+                  <Input
+                    value={c.name}
+                    onChange={(e) => {
+                      const updated = [...colors];
+                      updated[i] = { ...updated[i], name: e.target.value };
+                      setColors(updated);
+                    }}
+                    placeholder="Color name (e.g. Emerald)"
+                    className="flex-1 min-w-[120px]"
+                  />
+                  <Select
+                    value={c.imageIndex}
+                    onValueChange={(val) => {
+                      const updated = [...colors];
+                      updated[i] = { ...updated[i], imageIndex: val };
+                      setColors(updated);
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-[180px] shrink-0 h-10">
+                      <SelectValue placeholder="Link image" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="-1">No image</SelectItem>
+                      <SelectItem value="0">
+                        <div className="flex items-center gap-2">
+                          {previewSrc ? (
+                            <img src={previewSrc} alt="Primary" className="w-5 h-5 object-cover rounded-sm border border-border" />
+                          ) : (
+                            <div className="w-5 h-5 bg-muted rounded-sm border border-border" />
+                          )}
+                          <span>Primary Image</span>
+                        </div>
+                      </SelectItem>
+                      {extraImages.map((item, idx) => {
+                        const src = item.file ? URL.createObjectURL(item.file) : getPreviewImage(item.url);
+                        return (
+                          <SelectItem key={idx} value={(idx + 1).toString()}>
+                            <div className="flex items-center gap-2">
+                              {src ? (
+                                <img src={src} alt={`Extra ${idx + 1}`} className="w-5 h-5 object-cover rounded-sm border border-border" />
+                              ) : (
+                                <div className="w-5 h-5 bg-muted rounded-sm border border-border" />
+                              )}
+                              <span>Extra Image {idx + 1}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button" variant="ghost" size="icon"
+                    onClick={() => setColors(colors.filter((_, idx) => idx !== i))}
+                    className="text-destructive hover:text-destructive/80 shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+                
+                {/* Size stock settings for this color */}
+                {selectedSizes.length > 0 && (
+                  <div className="pl-12 space-y-2 border-l border-border/80 ml-5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Size Stock Limits</p>
+                    <div className="flex flex-wrap gap-2.5">
+                      {selectedSizes.map((sz) => {
+                        const currentSizeObj = Array.isArray(c.sizes) ? c.sizes.find(s => s.size === sz) : null;
+                        const currentStock = currentSizeObj ? currentSizeObj.stock : 0;
+                        return (
+                          <div key={sz} className="flex items-center gap-1.5 bg-background/60 border border-border/70 rounded-lg px-2.5 py-1">
+                            <span className="text-xs font-bold text-foreground/80">{sz}:</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={currentStock}
+                              onChange={(e) => {
+                                const stockVal = parseInt(e.target.value, 10) || 0;
+                                const updated = [...colors];
+                                const existingSizes = Array.isArray(updated[i].sizes) ? [...(updated[i].sizes || [])] : [];
+                                const idx = existingSizes.findIndex(s => s.size === sz);
+                                if (idx !== -1) {
+                                  existingSizes[idx] = { size: sz, stock: stockVal };
+                                } else {
+                                  existingSizes.push({ size: sz, stock: stockVal });
+                                }
+                                updated[i] = { ...updated[i], sizes: existingSizes };
+
+                                // Calculate the sum of all size stocks across all colors
+                                let totalStock = 0;
+                                updated.forEach(colorItem => {
+                                  if (Array.isArray(colorItem.sizes)) {
+                                    colorItem.sizes.forEach(sizeItem => {
+                                      if (selectedSizes.includes(sizeItem.size)) {
+                                        totalStock += sizeItem.stock;
+                                      }
+                                    });
+                                  }
+                                });
+                                setStock(totalStock.toString());
+                                setColors(updated);
+                              }}
+                              className="w-12 h-6 bg-transparent border-0 text-xs focus:ring-0 p-0 text-center font-bold text-primary"
+                              placeholder="0"
+                            />
                           </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button" variant="ghost" size="icon"
-                  onClick={() => setColors(colors.filter((_, idx) => idx !== i))}
-                  className="text-destructive hover:text-destructive/80 shrink-0"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             <Button
               type="button" variant="outline" size="sm"
-              onClick={() => setColors([...colors, { name: "", hex: "#000000", imageIndex: "-1" }])}
+              onClick={() => setColors([...colors, { name: "", hex: "#000000", imageIndex: "-1", sizes: [] }])}
             >
               <Plus className="w-4 h-4" /> Add color
             </Button>

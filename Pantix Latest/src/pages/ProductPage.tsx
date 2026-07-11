@@ -110,6 +110,21 @@ const ProductPage = () => {
   const [reviewText, setReviewText] = useState("");
   const [copied, setCopied] = useState(false);
   
+  const currentStock = useMemo(() => {
+    if (!product) return 0;
+    if (color && product.colors) {
+      const colorObj: any = product.colors.find((c: any) => c.name === color);
+      if (colorObj && Array.isArray(colorObj.sizes) && colorObj.sizes.length > 0) {
+        if (size) {
+          const sizeObj = colorObj.sizes.find((s: any) => s.size === size);
+          return sizeObj ? Number(sizeObj.stock) : 0;
+        }
+        return 0;
+      }
+    }
+    return product.stock !== undefined ? product.stock : 0;
+  }, [product, color, size]);
+
   const commissionRate = product?.commission_rate || 0;
   const commissionAmount = product ? (product.price * commissionRate) / 100 : 0;
 
@@ -229,14 +244,14 @@ const ProductPage = () => {
   const total = finalPrice * qty;
   const related = products.filter((p) => p.id !== product.id).slice(0, 4);
 
-  const stockText = !product.inStock
+  const stockText = currentStock === 0
     ? "Out of Stock"
-    : product.stock !== undefined && product.stock <= 5
-      ? `Only ${product.stock} Left`
+    : currentStock <= 5
+      ? `Only ${currentStock} Left`
       : "In Stock";
-  const stockTone = !product.inStock
+  const stockTone = currentStock === 0
     ? "bg-destructive/15 text-destructive border-destructive/40"
-    : product.stock !== undefined && product.stock <= 5
+    : currentStock <= 5
       ? "bg-gold/15 text-gold border-gold/50"
       : "bg-emerald-bright/30 text-primary-glow border-gold/40";
 
@@ -530,19 +545,36 @@ const ProductPage = () => {
                 Select size
               </p>
               <div className="flex flex-wrap gap-2">
-                {product.sizes.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setSize(s)}
-                    className={`min-w-12 px-4 py-2 text-sm border transition-colors ${
-                      size === s
-                        ? "bg-gold text-primary-foreground border-gold"
-                        : "border-gold/30 text-foreground hover:border-gold"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
+                {product.sizes.map((s) => {
+                  const sizeStock = (() => {
+                    if (color && product.colors) {
+                      const colorObj: any = product.colors.find((col: any) => col.name === color);
+                      if (colorObj && Array.isArray(colorObj.sizes) && colorObj.sizes.length > 0) {
+                        const sizeObj = colorObj.sizes.find((sz: any) => sz.size === s);
+                        return sizeObj ? Number(sizeObj.stock) : 0;
+                      }
+                    }
+                    return product.stock || 0;
+                  })();
+                  const isOutOfStock = sizeStock === 0;
+
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => setSize(s)}
+                      disabled={isOutOfStock}
+                      className={`min-w-12 px-4 py-2 text-sm border transition-all ${
+                        size === s
+                          ? "bg-gold text-primary-foreground border-gold"
+                          : isOutOfStock
+                            ? "border-dashed border-muted-foreground/30 text-muted-foreground/40 cursor-not-allowed opacity-50"
+                            : "border-gold/30 text-foreground hover:border-gold"
+                      }`}
+                    >
+                      {s} {isOutOfStock ? "(Out of Stock)" : ""}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -557,6 +589,17 @@ const ProductPage = () => {
                       key={c.name}
                       onClick={() => {
                         setColor(c.name);
+
+                        // Auto-select first in-stock size for the new color
+                        if (Array.isArray((c as any).sizes) && (c as any).sizes.length > 0) {
+                          const available = (c as any).sizes.find((sz: any) => Number(sz.stock) > 0);
+                          if (available) {
+                            setSize(available.size);
+                          } else {
+                            setSize((c as any).sizes[0].size);
+                          }
+                        }
+
                         if (!isMock && c.image && product.images) {
                           const idx = product.images.indexOf(c.image);
                           if (idx !== -1) {
@@ -613,13 +656,14 @@ const ProductPage = () => {
             <div className="p-4 grid grid-cols-[1fr_1.5fr] gap-3">
               <button
                 onClick={() => addToCart(product.id, size, color, qty, refId ?? undefined)}
-                className="flex items-center justify-center gap-2 rounded-xl border-2 border-gold/40 bg-transparent py-3.5 text-sm font-bold text-gold uppercase tracking-wider hover:bg-gold/5 transition-colors"
+                disabled={currentStock === 0}
+                className="flex items-center justify-center gap-2 rounded-xl border-2 border-gold/40 bg-transparent py-3.5 text-sm font-bold text-gold uppercase tracking-wider hover:bg-gold/5 transition-colors disabled:opacity-50"
               >
                 Add to Cart
               </button>
               <button
                 onClick={handleBuy}
-                disabled={!product.inStock}
+                disabled={!product.inStock || currentStock === 0}
                 className="px-6 py-3.5 bg-gold text-primary-foreground uppercase tracking-wide text-sm font-medium hover:bg-primary-glow disabled:opacity-50 transition-colors shadow-gold"
               >
                 Buy Now

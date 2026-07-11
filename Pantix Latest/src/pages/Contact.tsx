@@ -1,4 +1,4 @@
-import { Mail, MapPin, MessageCircle, Instagram } from "lucide-react";
+import { Mail, MapPin, MessageCircle, Instagram, Youtube } from "lucide-react";
 import { Layout } from "@/components/Layout";
 
 const Contact = () => {
@@ -15,14 +15,17 @@ const Contact = () => {
 
         <div className="mt-12 grid md:grid-cols-2 gap-8 lg:gap-12 w-full">
           <div className="space-y-5">
-            <Item icon={Mail} title="Email">
+            <Item icon={Mail} title="Email" href="mailto:info@pantix.in">
               info@pantix.in
             </Item>
-            <Item icon={MessageCircle} title="WhatsApp">
+            <Item icon={MessageCircle} title="WhatsApp" href="https://wa.me/919640369511">
               +91 9640369511
             </Item>
-            <Item icon={Instagram} title="Instagram">
-              @pantix.world
+            <Item icon={Instagram} title="Instagram" href="https://www.instagram.com/pantix.in">
+              @pantix.in
+            </Item>
+            <Item icon={Youtube} title="YouTube" href="https://www.youtube.com">
+              YouTube Channel
             </Item>
           </div>
           <form
@@ -54,10 +57,12 @@ const Contact = () => {
 function Item({
   icon: Icon,
   title,
+  href,
   children,
 }: {
-  icon: typeof Mail;
+  icon: any;
   title: string;
+  href?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -69,7 +74,18 @@ function Item({
         <p className="text-[11px] uppercase tracking-[0.25em] text-gold/80">
           {title}
         </p>
-        <p className="text-foreground">{children}</p>
+        {href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-foreground hover:text-gold transition-colors font-medium hover:underline"
+          >
+            {children}
+          </a>
+        ) : (
+          <p className="text-foreground">{children}</p>
+        )}
       </div>
     </div>
   );

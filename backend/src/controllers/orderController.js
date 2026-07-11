@@ -126,6 +126,71 @@ export const createOrder = async (req, res) => {
       ]
     );
 
+    // Decrement stock for each item based on color and size
+    for (const item of items) {
+      const prodRes = await client.query(
+        "SELECT colors, stock FROM products WHERE id = $1 FOR UPDATE",
+        [item.id]
+      );
+      if (prodRes.rows.length > 0) {
+        const { colors, stock } = prodRes.rows[0];
+        const qty = parseInt(item.qty || 1, 10);
+        
+        let colorsUpdated = false;
+        let parsedColors = colors;
+        if (typeof colors === "string") {
+          try {
+            parsedColors = JSON.parse(colors);
+          } catch (e) {}
+        }
+
+        if (Array.isArray(parsedColors) && item.color && item.size) {
+          const colorObj = parsedColors.find((c) => c.name === item.color);
+          if (colorObj && Array.isArray(colorObj.sizes)) {
+            const sizeObj = colorObj.sizes.find((s) => s.size === item.size);
+            if (sizeObj) {
+              if (sizeObj.stock < qty) {
+                throw new Error(
+                  `Insufficient stock for product ${item.name} (Color: ${item.color}, Size: ${item.size})`
+                );
+              }
+              sizeObj.stock = Math.max(0, sizeObj.stock - qty);
+              colorsUpdated = true;
+            }
+          }
+        }
+
+        let nextStock = stock;
+        if (colorsUpdated) {
+          // Total stock is the sum of all size stocks across all colors
+          let totalStock = 0;
+          parsedColors.forEach((c) => {
+            if (Array.isArray(c.sizes)) {
+              c.sizes.forEach((s) => {
+                totalStock += parseInt(s.stock || 0, 10);
+              });
+            }
+          });
+          nextStock = totalStock;
+
+          await client.query(
+            "UPDATE products SET colors = $1, stock = $2, in_stock = $3 WHERE id = $4",
+            [JSON.stringify(parsedColors), nextStock, nextStock > 0, item.id]
+          );
+        } else {
+          // Fallback: decrement overall stock directly
+          if (stock < qty) {
+            throw new Error(`Insufficient stock for product ${item.name}`);
+          }
+          nextStock = Math.max(0, stock - qty);
+          await client.query(
+            "UPDATE products SET stock = $1, in_stock = $2 WHERE id = $3",
+            [nextStock, nextStock > 0, item.id]
+          );
+        }
+      }
+    }
+
     if (reseller_id) {
       for (const item of items) {
         const prodRes = await client.query("SELECT commission_rate FROM products WHERE id = $1", [item.id]);

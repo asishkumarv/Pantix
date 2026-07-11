@@ -135,7 +135,7 @@ const Account = () => {
       key: "reseller",
       to: "/account/reseller",
       icon: Coins,
-      title: "Resell & Earn",
+      title: "Resell",
       sub: "Manage earnings & margins",
     },
     {
