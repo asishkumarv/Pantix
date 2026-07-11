@@ -254,6 +254,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (Array.isArray(parsedColors)) {
           parsedColors = parsedColors.map((c: any) => ({
             ...c,
+            images: Array.isArray(c.images) ? c.images.map(resolveImage) : c.image ? [resolveImage(c.image)] : [],
             image: c.image ? resolveImage(c.image) : undefined
           }));
         }

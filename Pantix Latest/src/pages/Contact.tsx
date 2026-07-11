@@ -24,7 +24,7 @@ const Contact = () => {
             <Item icon={Instagram} title="Instagram" href="https://www.instagram.com/pantix.in">
               @pantix.in
             </Item>
-            <Item icon={Youtube} title="YouTube" href="https://www.youtube.com">
+            <Item icon={Youtube} title="YouTube" href="https://www.youtube.com/@MrsPantix">
               YouTube Channel
             </Item>
           </div>

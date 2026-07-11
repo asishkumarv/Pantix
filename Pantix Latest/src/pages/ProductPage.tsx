@@ -125,29 +125,62 @@ const ProductPage = () => {
     return product.stock !== undefined ? product.stock : 0;
   }, [product, color, size]);
 
+  const galleryImages = useMemo(() => {
+    if (!product) return [];
+    if (color && product.colors) {
+      const colorObj: any = product.colors.find((c: any) => c.name === color);
+      if (colorObj && Array.isArray(colorObj.images) && colorObj.images.length > 0) {
+        return colorObj.images;
+      }
+    }
+    return product.images || [];
+  }, [product, color]);
+
+  const isProductSoldOut = useMemo(() => {
+    if (!product) return true;
+    if (product.colors && product.colors.length > 0) {
+      return product.colors.every((c: any) => 
+        !c.sizes || c.sizes.every((sz: any) => Number(sz.stock) === 0)
+      );
+    }
+    return product.stock !== undefined ? product.stock === 0 : !product.inStock;
+  }, [product]);
+
+  const availableSizesForSelectedColor = useMemo(() => {
+    if (!product) return [];
+    if (color && product.colors) {
+      const colorObj = product.colors.find((col: any) => col.name === color);
+      if (colorObj && Array.isArray(colorObj.sizes)) {
+        return colorObj.sizes.map((s: any) => s.size);
+      }
+    }
+    return product.sizes || [];
+  }, [product, color]);
+
   const commissionRate = product?.commission_rate || 0;
   const commissionAmount = product ? (product.price * commissionRate) / 100 : 0;
 
   // Sync size/color when product is loaded
   useEffect(() => {
     if (product) {
-      setSize(product.sizes[0] ?? "");
-      setColor(product.colors?.[0]?.name ?? "");
+      const firstColor = product.colors?.[0];
+      const defaultColor = firstColor?.name ?? "";
+      setColor(defaultColor);
+      
+      if (firstColor && Array.isArray(firstColor.sizes) && firstColor.sizes.length > 0) {
+        const firstAvailable = firstColor.sizes.find((s: any) => Number(s.stock) > 0);
+        setSize(firstAvailable ? firstAvailable.size : firstColor.sizes[0].size);
+      } else {
+        setSize(product.sizes[0] ?? "");
+      }
     }
   }, [product]);
 
-  // Sync color when active thumb changes (image to color)
+  // Reset active thumb when color changes
   useEffect(() => {
-    if (product?.colors && !isMock) {
-      const activeImg = product.images?.[activeThumb];
-      if (activeImg) {
-        const matchingColor = product.colors.find((c: any) => c.image === activeImg);
-        if (matchingColor && matchingColor.name !== color) {
-          setColor(matchingColor.name);
-        }
-      }
-    }
-  }, [activeThumb, product, isMock]); // intentionally omitted color to avoid infinite loops
+    setActiveThumb(0);
+    setViewIndex(0);
+  }, [color]);
 
   useEffect(() => {
     if (!id) return;
@@ -244,12 +277,14 @@ const ProductPage = () => {
   const total = finalPrice * qty;
   const related = products.filter((p) => p.id !== product.id).slice(0, 4);
 
-  const stockText = currentStock === 0
-    ? "Out of Stock"
-    : currentStock <= 5
-      ? `Only ${currentStock} Left`
-      : "In Stock";
-  const stockTone = currentStock === 0
+  const stockText = isProductSoldOut
+    ? "Sold Out"
+    : currentStock === 0
+      ? "Out of Stock"
+      : currentStock <= 5
+        ? `Only ${currentStock} Left`
+        : "In Stock";
+  const stockTone = isProductSoldOut || currentStock === 0
     ? "bg-destructive/15 text-destructive border-destructive/40"
     : currentStock <= 5
       ? "bg-gold/15 text-gold border-gold/50"
@@ -321,7 +356,7 @@ const ProductPage = () => {
         <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-16">
           {/* Gallery — vertical thumbs on left, each thumb owns its own 3-image group */}
           <Gallery
-            images={product.images}
+            images={galleryImages}
             name={product.name}
             activeThumb={activeThumb}
             viewIndex={viewIndex}
@@ -331,7 +366,7 @@ const ProductPage = () => {
               if (isMock) {
                 setViewIndex((v) => (v - 1 + 3) % 3);
               } else {
-                const len = product.images.length || 1;
+                const len = galleryImages.length || 1;
                 setActiveThumb((v) => (v - 1 + len) % len);
               }
             }}
@@ -340,7 +375,7 @@ const ProductPage = () => {
               if (isMock) {
                 setViewIndex((v) => (v + 1) % 3);
               } else {
-                const len = product.images.length || 1;
+                const len = galleryImages.length || 1;
                 setActiveThumb((v) => (v + 1) % len);
               }
             }}
@@ -545,7 +580,7 @@ const ProductPage = () => {
                 Select size
               </p>
               <div className="flex flex-wrap gap-2">
-                {product.sizes.map((s) => {
+                {availableSizesForSelectedColor.map((s) => {
                   const sizeStock = (() => {
                     if (color && product.colors) {
                       const colorObj: any = product.colors.find((col: any) => col.name === color);
@@ -584,44 +619,53 @@ const ProductPage = () => {
                   Select Color: <span className="text-foreground">{color}</span>
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  {product.colors.map((c: any) => (
-                    <button
-                      key={c.name}
-                      onClick={() => {
-                        setColor(c.name);
+                  {product.colors.map((c: any) => {
+                    const isColorOutOfStock = Array.isArray(c.sizes) && c.sizes.length > 0
+                      ? c.sizes.every((sz: any) => Number(sz.stock) === 0)
+                      : false;
 
-                        // Auto-select first in-stock size for the new color
-                        if (Array.isArray((c as any).sizes) && (c as any).sizes.length > 0) {
-                          const available = (c as any).sizes.find((sz: any) => Number(sz.stock) > 0);
-                          if (available) {
-                            setSize(available.size);
-                          } else {
-                            setSize((c as any).sizes[0].size);
-                          }
-                        }
+                    return (
+                      <button
+                        key={c.name}
+                        disabled={isColorOutOfStock}
+                        onClick={() => {
+                          setColor(c.name);
 
-                        if (!isMock && c.image && product.images) {
-                          const idx = product.images.indexOf(c.image);
-                          if (idx !== -1) {
-                            setDirection(idx > activeThumb ? 1 : -1);
-                            setActiveThumb(idx);
-                            setViewIndex(0);
+                          // Auto-select first in-stock size for the new color
+                          if (Array.isArray((c as any).sizes) && (c as any).sizes.length > 0) {
+                            const available = (c as any).sizes.find((sz: any) => Number(sz.stock) > 0);
+                            if (available) {
+                              setSize(available.size);
+                            } else {
+                              setSize((c as any).sizes[0].size);
+                            }
                           }
-                        }
-                      }}
-                      title={c.name}
-                      className={`h-9 w-9 rounded-full border-2 transition-all p-0.5 ${
-                        color === c.name
-                          ? "border-gold scale-110 shadow-gold"
-                          : "border-transparent hover:border-gold/40"
-                      }`}
-                    >
-                      <div
-                        className="h-full w-full rounded-full shadow-inner"
-                        style={{ backgroundColor: c.hex }}
-                      />
-                    </button>
-                  ))}
+
+                          if (!isMock && c.image && product.images) {
+                            const idx = product.images.indexOf(c.image);
+                            if (idx !== -1) {
+                              setDirection(idx > activeThumb ? 1 : -1);
+                              setActiveThumb(idx);
+                              setViewIndex(0);
+                            }
+                          }
+                        }}
+                        title={c.name}
+                        className={`h-9 w-9 rounded-full border-2 transition-all p-0.5 ${
+                          color === c.name
+                            ? "border-gold scale-110 shadow-gold"
+                            : isColorOutOfStock
+                              ? "opacity-35 cursor-not-allowed border-dashed border-muted-foreground bg-card/25"
+                              : "border-transparent hover:border-gold/40"
+                        }`}
+                      >
+                        <div
+                          className="h-full w-full rounded-full shadow-inner"
+                          style={{ backgroundColor: c.hex }}
+                        />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -656,14 +700,14 @@ const ProductPage = () => {
             <div className="p-4 grid grid-cols-[1fr_1.5fr] gap-3">
               <button
                 onClick={() => addToCart(product.id, size, color, qty, refId ?? undefined)}
-                disabled={currentStock === 0}
+                disabled={isProductSoldOut || currentStock === 0}
                 className="flex items-center justify-center gap-2 rounded-xl border-2 border-gold/40 bg-transparent py-3.5 text-sm font-bold text-gold uppercase tracking-wider hover:bg-gold/5 transition-colors disabled:opacity-50"
               >
                 Add to Cart
               </button>
               <button
                 onClick={handleBuy}
-                disabled={!product.inStock || currentStock === 0}
+                disabled={!product.inStock || isProductSoldOut || currentStock === 0}
                 className="px-6 py-3.5 bg-gold text-primary-foreground uppercase tracking-wide text-sm font-medium hover:bg-primary-glow disabled:opacity-50 transition-colors shadow-gold"
               >
                 Buy Now
