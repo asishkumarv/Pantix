@@ -485,29 +485,39 @@ const Checkout = () => {
               <h3 className="font-display text-xl text-foreground">Summary</h3>
               <div className="gold-divider mt-2 w-12" />
               <ul className="mt-4 space-y-3 max-h-64 overflow-auto">
-                {items.map((i) => (
-                  <li
-                    key={`${i.id}-${i.size}`}
-                    className="flex gap-3 text-sm"
-                  >
-                    <img
-                      src={i.product.image}
-                      alt=""
-                      className="h-14 w-12 object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-foreground line-clamp-1">
-                        {i.product.name}
+                {items.map((i) => {
+                  let displayImage = i.product.image;
+                  if (i.color && i.product.colors) {
+                    const colorObj = i.product.colors.find((col: any) => col.name === i.color);
+                    if (colorObj?.image) {
+                      displayImage = colorObj.image;
+                    }
+                  }
+
+                  return (
+                    <li
+                      key={`${i.id}-${i.size}-${i.color || ""}`}
+                      className="flex gap-3 text-sm"
+                    >
+                      <img
+                        src={displayImage}
+                        alt=""
+                        className="h-14 w-12 object-cover"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-foreground line-clamp-1">
+                          {i.product.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {i.size} {i.color ? `· Color: ${i.color}` : ""} · Qty {i.qty}
+                        </p>
+                      </div>
+                      <p className="text-gold whitespace-nowrap">
+                        {formatINR(i.product.price * i.qty)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {i.size} · Qty {i.qty}
-                      </p>
-                    </div>
-                    <p className="text-gold whitespace-nowrap">
-                      {formatINR(i.product.price * i.qty)}
-                    </p>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
               <div className="mt-5 pt-4 border-t border-gold/15 space-y-2 text-sm">
                 <div className="flex justify-between">
