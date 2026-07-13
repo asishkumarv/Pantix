@@ -53,6 +53,12 @@ const Account = () => {
   }, [pathname]);
 
   useEffect(() => {
+    if (active === "reseller" && user && !user.is_reseller) {
+      navigate("/account");
+    }
+  }, [active, user, navigate]);
+
+  useEffect(() => {
     const fetchOrders = async () => {
       if (!user) {
         setOrders([]);
@@ -161,6 +167,10 @@ const Account = () => {
     },
   ];
 
+  const visibleMenuItems = menuItems.filter(
+    (item) => item.key !== "reseller" || user?.is_reseller
+  );
+
   const handleLogout = () => {
     setShowLogoutConfirm(true);
   };
@@ -215,7 +225,7 @@ const Account = () => {
                 user={user}
                 onEdit={() => navigate("/account/profile")}
               />
-              {menuItems.map((m) => (
+              {visibleMenuItems.map((m) => (
                 <MenuCard
                   key={m.key}
                   to={m.to}
@@ -241,7 +251,7 @@ const Account = () => {
                 user={user}
                 onEdit={() => navigate("/account/profile")}
               />
-              {menuItems.map((m) => (
+              {visibleMenuItems.map((m) => (
                 <MenuCard
                   key={m.key}
                   to={m.to}

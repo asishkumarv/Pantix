@@ -34,43 +34,72 @@ export const getAllResellers = async (req, res) => {
 export const createReseller = async (req, res) => {
   const { name, contact, phone, region, password, tier, status } = req.body;
 
-  if (!name || !contact) {
-    return res.status(400).json({ error: "Name and contact email are required" });
-  }
-  
-  if (!password) {
-    return res.status(400).json({ error: "Password is required" });
+  if (!contact) {
+    return res.status(400).json({ error: "Contact email is required" });
   }
 
   try {
-    const passwordHash = await bcrypt.hash(password, 10);
+    const emailLower = contact.toLowerCase();
     
-    const result = await pool.query(
-      `INSERT INTO users (
-        name, 
-        email, 
-        phone, 
-        region,
-        password_hash, 
-        role, 
-        status, 
-        is_reseller, 
-        wallet_balance,
-        tier,
-        reseller_status
-       )
-       VALUES ($1, $2, $3, $4, $5, 'reseller', 'Active', TRUE, 0.00, $6, $7)
-       ON CONFLICT (email) DO UPDATE SET 
-         is_reseller = TRUE, 
-         password_hash = EXCLUDED.password_hash,
-         role = 'reseller',
-         tier = EXCLUDED.tier,
-         reseller_status = EXCLUDED.reseller_status,
-         phone = EXCLUDED.phone,
-         region = EXCLUDED.region
-       RETURNING id, name, email as contact, phone, region`,
-      [name, contact.toLowerCase(), phone || null, region || null, passwordHash, tier || 'Bronze', status || 'Active']
-    );
+    // Check if user already exists
+    const checkUser = await pool.query("SELECT * FROM users WHERE email = $1", [emailLower]);
+    
+    let result;
+    if (checkUser.rows.length > 0) {
+      // User exists - update/promote them
+      const user = checkUser.rows[0];
+      const newName = name || user.name;
+      const newPhone = phone || user.phone;
+      const newRegion = region || user.region;
+      
+      let passwordHash = user.password_hash;
+      if (password) {
+        passwordHash = await bcrypt.hash(password, 10);
+      }
+      
+      result = await pool.query(
+        `UPDATE users SET
+          name = $1,
+          phone = $2,
+          region = $3,
+          is_reseller = TRUE,
+          role = 'reseller',
+          tier = $4,
+          reseller_status = $5,
+          password_hash = $6
+        WHERE id = $7
+        RETURNING id, name, email as contact, phone, region`,
+        [newName, newPhone, newRegion, tier || 'Bronze', status || 'Active', passwordHash, user.id]
+      );
+    } else {
+      // User does not exist - create a new reseller
+      if (!name) {
+        return res.status(400).json({ error: "Name is required for a new user" });
+      }
+      if (!password) {
+        return res.status(400).json({ error: "Password is required for a new user" });
+      }
+      
+      const passwordHash = await bcrypt.hash(password, 10);
+      result = await pool.query(
+        `INSERT INTO users (
+          name, 
+          email, 
+          phone, 
+          region,
+          password_hash, 
+          role, 
+          status, 
+          is_reseller, 
+          wallet_balance,
+          tier,
+          reseller_status
+         )
+         VALUES ($1, $2, $3, $4, $5, 'reseller', 'Active', TRUE, 0.00, $6, $7)
+         RETURNING id, name, email as contact, phone, region`,
+        [name, emailLower, phone || null, region || null, passwordHash, tier || 'Bronze', status || 'Active']
+      );
+    }
     
     const newId = result.rows[0].id;
     await pool.query(

@@ -56,6 +56,7 @@ export default function Resellers() {
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("create");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [rName, setRName] = useState("");
   const [rContact, setRContact] = useState("");
   const [rPhone, setRPhone] = useState("");
@@ -83,6 +84,19 @@ export default function Resellers() {
     },
   });
 
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      const res = await apiFetch(`${API_URL}/api/users`);
+      if (!res.ok) throw new Error("Failed to fetch users");
+      return res.json();
+    },
+  });
+
+  const availableUsers = users.filter(
+    (u: any) => !u.is_reseller && u.reseller_status !== "Pending"
+  );
+
   const approveMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiFetch(`${API_URL}/api/resellers/admin/withdrawals/${id}/status`, {
@@ -98,6 +112,7 @@ export default function Resellers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["withdrawals"] });
       queryClient.invalidateQueries({ queryKey: ["resellers"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("Withdrawal request approved & paid! 💰");
     },
     onError: (err: any) => {
@@ -120,6 +135,7 @@ export default function Resellers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["withdrawals"] });
       queryClient.invalidateQueries({ queryKey: ["resellers"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("Withdrawal request rejected & refunded! ↩️");
     },
     onError: (err: any) => {
@@ -136,6 +152,7 @@ export default function Resellers() {
     setRTier("Bronze");
     setRStatus("Active");
     setEditingId(null);
+    setSelectedUserId(null);
     setModalMode("create");
   };
 
@@ -176,6 +193,7 @@ export default function Resellers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resellers"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("Reseller added!", { description: `${rName} is now part of your network.` });
       closeModal();
     },
@@ -198,6 +216,7 @@ export default function Resellers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resellers"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("Reseller updated successfully");
       closeModal();
     },
@@ -219,6 +238,7 @@ export default function Resellers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resellers"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("Reseller deleted successfully");
     },
     onError: (err: any) => {
@@ -599,6 +619,45 @@ export default function Resellers() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {modalMode === "create" && (
+                <div className="space-y-2">
+                  <Label>Select Registered User (Optional)</Label>
+                  <Select
+                    value={selectedUserId || "none"}
+                    onValueChange={(val) => {
+                      if (val === "none") {
+                        setSelectedUserId(null);
+                        setRName("");
+                        setRContact("");
+                        setRPhone("");
+                        setRPassword("");
+                      } else {
+                        const selected = availableUsers.find((u: any) => String(u.id) === val);
+                        if (selected) {
+                          setSelectedUserId(val);
+                          setRName(selected.name || "");
+                          setRContact(selected.email || "");
+                          setRPhone(selected.phone || "");
+                          setRPassword("");
+                        }
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full bg-background border-border">
+                      <SelectValue placeholder="Choose a registered user..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">-- New User (Fill manually) --</SelectItem>
+                      {availableUsers.map((u: any) => (
+                        <SelectItem key={u.id} value={String(u.id)}>
+                          {u.name} ({u.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="rName">Name (business name/name) *</Label>
                 <Input
@@ -619,6 +678,7 @@ export default function Resellers() {
                   onChange={(e) => setRContact(e.target.value)}
                   placeholder="ops@example.com"
                   required
+                  disabled={!!selectedUserId}
                 />
               </div>
 
@@ -635,7 +695,7 @@ export default function Resellers() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="rPassword">Password {modalMode === 'edit' && '(leave blank to keep unchanged)'}</Label>
+                <Label htmlFor="rPassword">Password { (modalMode === 'edit' || selectedUserId) ? '(leave blank to keep unchanged)' : '*' }</Label>
                 <div className="relative">
                   <Input
                     id="rPassword"
@@ -643,7 +703,7 @@ export default function Resellers() {
                     value={rPassword}
                     onChange={(e) => setRPassword(e.target.value)}
                     placeholder="Enter password"
-                    required={modalMode === 'create'}
+                    required={modalMode === 'create' && !selectedUserId}
                     className="pr-10"
                   />
                   <button

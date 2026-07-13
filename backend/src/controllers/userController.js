@@ -3,7 +3,7 @@ import pool from "../config/db.js";
 export const getAllUsers = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, name, email, phone, role, joined_at, status FROM users ORDER BY joined_at DESC"
+      "SELECT id, name, email, phone, role, joined_at, status, is_reseller, reseller_status FROM users ORDER BY joined_at DESC"
     );
     res.json(result.rows);
   } catch (err) {
