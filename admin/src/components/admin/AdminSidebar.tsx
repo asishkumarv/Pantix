@@ -7,6 +7,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import logoImg from "@/assets/pantix-logo.jpg";
 
 const items = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -63,9 +64,7 @@ export default function AdminSidebar({ open, onClose }: Props) {
         {/* Logo */}
         <div className="h-[70px] flex items-center justify-between px-6 border-b border-sidebar-border">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-primary-gradient grid place-items-center shadow-glow">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
+            <img src={logoImg} alt="Pantix Logo" className="w-9 h-9 rounded-xl object-cover shadow-glow" />
             <span className="text-xl font-bold tracking-tight text-white">Pantix</span>
           </div>
           <button onClick={onClose} className="lg:hidden text-sidebar-foreground hover:text-white">
