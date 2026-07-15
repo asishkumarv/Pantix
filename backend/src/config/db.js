@@ -25,46 +25,74 @@ pool.on("error", (err) => {
 
 // Run database schema migrations
 (async () => {
-  try {
-    await pool.query(`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS is_reseller BOOLEAN DEFAULT FALSE;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS wallet_balance NUMERIC(10, 2) DEFAULT 0.00;
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS reseller_id INT REFERENCES users(id) ON DELETE SET NULL;
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS reseller_commission NUMERIC(10, 2) DEFAULT 0.00;
+  const migrations = [
+    {
+      name: "users: add is_reseller",
+      query: "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_reseller BOOLEAN DEFAULT FALSE;"
+    },
+    {
+      name: "users: add wallet_balance",
+      query: "ALTER TABLE users ADD COLUMN IF NOT EXISTS wallet_balance NUMERIC(10, 2) DEFAULT 0.00;"
+    },
+    {
+      name: "orders: add reseller_id",
+      query: "ALTER TABLE orders ADD COLUMN IF NOT EXISTS reseller_id INT REFERENCES users(id) ON DELETE SET NULL;"
+    },
+    {
+      name: "orders: add reseller_commission",
+      query: "ALTER TABLE orders ADD COLUMN IF NOT EXISTS reseller_commission NUMERIC(10, 2) DEFAULT 0.00;"
+    },
+    {
+      name: "create uploads table",
+      query: `
+        CREATE TABLE IF NOT EXISTS uploads (
+          id SERIAL PRIMARY KEY,
+          filename VARCHAR(255) NOT NULL UNIQUE,
+          mime_type VARCHAR(100) NOT NULL,
+          data BYTEA NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+      `
+    },
+    {
+      name: "create withdrawal_requests table",
+      query: `
+        CREATE TABLE IF NOT EXISTS withdrawal_requests (
+          id SERIAL PRIMARY KEY,
+          user_id INT REFERENCES users(id) ON DELETE CASCADE,
+          name VARCHAR(255) NOT NULL,
+          phone VARCHAR(50) NOT NULL,
+          account_number VARCHAR(100) NOT NULL,
+          ifsc_code VARCHAR(50) NOT NULL,
+          amount NUMERIC(10, 2) NOT NULL,
+          status VARCHAR(50) DEFAULT 'Pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          processed_at TIMESTAMP
+        );
+      `
+    },
+    {
+      name: "create enquiries table",
+      query: `
+        CREATE TABLE IF NOT EXISTS enquiries (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          subject VARCHAR(255) NOT NULL,
+          message TEXT NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+      `
+    }
+  ];
 
-      CREATE TABLE IF NOT EXISTS uploads (
-        id SERIAL PRIMARY KEY,
-        filename VARCHAR(255) NOT NULL UNIQUE,
-        mime_type VARCHAR(100) NOT NULL,
-        data BYTEA NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS withdrawal_requests (
-        id SERIAL PRIMARY KEY,
-        user_id INT REFERENCES users(id) ON DELETE CASCADE,
-        name VARCHAR(255) NOT NULL,
-        phone VARCHAR(50) NOT NULL,
-        account_number VARCHAR(100) NOT NULL,
-        ifsc_code VARCHAR(50) NOT NULL,
-        amount NUMERIC(10, 2) NOT NULL,
-        status VARCHAR(50) DEFAULT 'Pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        processed_at TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS enquiries (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL,
-        subject VARCHAR(255) NOT NULL,
-        message TEXT NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-    `);
-    console.log("Database migrations successfully executed!");
-  } catch (err) {
-    console.error("Database migration error:", err.message || err);
+  for (const migration of migrations) {
+    try {
+      await pool.query(migration.query);
+      console.log(`Migration successful: ${migration.name}`);
+    } catch (err) {
+      console.warn(`Migration skipped/failed for "${migration.name}":`, err.message || err);
+    }
   }
 })();
 
