@@ -118,7 +118,7 @@ export default function ForgotPassword() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="pl-10 h-11"
-                  placeholder="admin@pantix.com"
+                  placeholder="admin@pantix.in"
                 />
               </div>
             </div>

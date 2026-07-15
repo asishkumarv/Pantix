@@ -14,7 +14,7 @@ export default function Login() {
   const location = useLocation();
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? "/";
 
-  const [email, setEmail] = useState("admin@pantix.com");
+  const [email, setEmail] = useState("admin@pantix.in");
   const [password, setPassword] = useState("admin123");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -93,7 +93,7 @@ export default function Login() {
 
           <div className="mt-6 p-3 rounded-lg bg-accent/60 border border-border text-xs">
             <span className="font-semibold text-accent-foreground">Demo credentials:</span>{" "}
-            <code className="font-mono">admin@pantix.com</code> / <code className="font-mono">admin123</code>
+            <code className="font-mono">admin@pantix.in</code> / <code className="font-mono">admin123</code>
           </div>
 
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
@@ -102,7 +102,7 @@ export default function Login() {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                  required className="pl-10 h-11" placeholder="you@pantix.com" />
+                  required className="pl-10 h-11" placeholder="you@pantix.in" />
               </div>
             </div>
 

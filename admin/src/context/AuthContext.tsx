@@ -11,7 +11,7 @@ type AuthCtx = {
 
 const Ctx = createContext<AuthCtx | undefined>(undefined);
 const KEY = "pantix-auth";
-const DEMO = { email: "admin@pantix.com", password: "admin123" };
+const DEMO = { email: "admin@pantix.in", password: "admin123" };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

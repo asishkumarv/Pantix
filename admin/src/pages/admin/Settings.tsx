@@ -76,7 +76,7 @@ export default function Settings() {
           </div>
           <div className="space-y-2">
             <Label>Email</Label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@pantix.com" />
+            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@pantix.in" />
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label>Password</Label>
