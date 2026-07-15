@@ -11,15 +11,18 @@ const Index = () => {
   const latest = useMemo(() => products.slice(0, 8), [products]);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const singleSetWidthRef = useRef(0);
-  const isHoveringCardRef = useRef(false);
   const loop = useMemo(() => [...categories, ...categories, ...categories], [categories]);
 
   useEffect(() => {
     const el = scrollerRef.current;
-    if (!el) return;
+    if (!el || categories.length === 0) return;
 
     let raf = 0;
     let last = performance.now();
+    let isInteracting = false;
+    let isHovering = false;
+    let resumeTimeout: number | null = null;
+
     const setMetrics = () => {
       singleSetWidthRef.current = el.scrollWidth / 3;
       if (singleSetWidthRef.current > 0 && el.scrollLeft === 0) {
@@ -42,7 +45,7 @@ const Index = () => {
       const delta = now - last;
       last = now;
 
-      if (!isHoveringCardRef.current) {
+      if (!isHovering && !isInteracting) {
         el.scrollLeft += delta * 0.035;
         normalizeScroll();
       }
@@ -50,15 +53,57 @@ const Index = () => {
       raf = window.requestAnimationFrame(tick);
     };
 
+    const handleScroll = () => {
+      normalizeScroll();
+    };
+
+    const handleTouchStart = () => {
+      isInteracting = true;
+      if (resumeTimeout) clearTimeout(resumeTimeout);
+    };
+
+    const handleTouchEnd = () => {
+      if (resumeTimeout) clearTimeout(resumeTimeout);
+      resumeTimeout = window.setTimeout(() => {
+        isInteracting = false;
+        last = performance.now();
+      }, 1500);
+    };
+
+    const handleMouseEnter = () => {
+      if (window.matchMedia("(hover: hover)").matches) {
+        isHovering = true;
+      }
+    };
+
+    const handleMouseLeave = () => {
+      isHovering = false;
+    };
+
     setMetrics();
     raf = window.requestAnimationFrame(tick);
+
     window.addEventListener("resize", setMetrics);
+    el.addEventListener("scroll", handleScroll);
+    el.addEventListener("touchstart", handleTouchStart, { passive: true });
+    el.addEventListener("touchend", handleTouchEnd, { passive: true });
+    el.addEventListener("touchcancel", handleTouchEnd, { passive: true });
+    el.addEventListener("mouseenter", handleMouseEnter);
+    el.addEventListener("mouseleave", handleMouseLeave);
 
     return () => {
       window.cancelAnimationFrame(raf);
       window.removeEventListener("resize", setMetrics);
+      if (resumeTimeout) clearTimeout(resumeTimeout);
+
+      el.removeEventListener("scroll", handleScroll);
+      el.removeEventListener("touchstart", handleTouchStart);
+      el.removeEventListener("touchend", handleTouchEnd);
+      el.removeEventListener("touchcancel", handleTouchEnd);
+      el.removeEventListener("mouseenter", handleMouseEnter);
+      el.removeEventListener("mouseleave", handleMouseLeave);
     };
-  }, []);
+  }, [categories]);
 
   return (
     <Layout>
@@ -80,12 +125,6 @@ const Index = () => {
                 to={`/category/${c.id}`}
                 className="category-arch-card group shrink-0 w-[168px] sm:w-[188px] md:w-[220px] lg:w-[240px]"
                 onDragStart={(event) => event.preventDefault()}
-                onMouseEnter={() => {
-                  isHoveringCardRef.current = true;
-                }}
-                onMouseLeave={() => {
-                  isHoveringCardRef.current = false;
-                }}
               >
                 <div className="category-arch-frame relative aspect-[0.82] overflow-hidden">
                   <img

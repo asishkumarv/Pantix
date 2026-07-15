@@ -61,6 +61,7 @@ const Checkout = () => {
           state: bdData.principalSubdivision || "",
           pin: bdData.postcode || "",
         }));
+        setSaveAddressToProfile(true);
         toast.success("Location filled using network IP");
       } else {
         toast.error("Could not determine network location");
@@ -113,6 +114,7 @@ const Checkout = () => {
               state: data.address.state || "",
               pin: data.address.postcode || "",
             }));
+            setSaveAddressToProfile(true);
             toast.success("Location filled successfully");
           } else {
             // Fallback to BigDataCloud reverse geocoding client
@@ -136,6 +138,7 @@ const Checkout = () => {
                   state: bdData.principalSubdivision || "",
                   pin: bdData.postcode || "",
                 }));
+                setSaveAddressToProfile(true);
                 toast.success("Location filled successfully");
                 return;
               }
@@ -270,14 +273,25 @@ const Checkout = () => {
       }
 
       if (saveAddressToProfile) {
-        addAddress({
-          label: address.name || user?.name || "Customer",
-          line1: address.line,
-          city: address.city,
-          state: address.state,
-          pincode: address.pin,
-          phone: address.phone
-        });
+        const addressExists = (addresses || []).some(
+          (a) =>
+            a.line1?.trim().toLowerCase() === address.line?.trim().toLowerCase() &&
+            a.city?.trim().toLowerCase() === address.city?.trim().toLowerCase() &&
+            a.state?.trim().toLowerCase() === address.state?.trim().toLowerCase() &&
+            a.pincode?.trim() === address.pin?.trim() &&
+            a.phone?.trim() === address.phone?.trim()
+        );
+
+        if (!addressExists) {
+          addAddress({
+            label: address.name || user?.name || "Customer",
+            line1: address.line,
+            city: address.city,
+            state: address.state,
+            pincode: address.pin,
+            phone: address.phone
+          });
+        }
       }
 
       clearCart();
@@ -316,7 +330,7 @@ const Checkout = () => {
                           <button
                             key={a.id}
                             type="button"
-                            onClick={() =>
+                            onClick={() => {
                               setAddress({
                                 name: user?.name || "",
                                 phone: a.phone || "",
@@ -324,8 +338,9 @@ const Checkout = () => {
                                 city: a.city || "",
                                 state: a.state || "",
                                 pin: a.pincode || "",
-                              })
-                            }
+                              });
+                              setSaveAddressToProfile(false);
+                            }}
                             className="text-left p-3 rounded border border-gold/20 hover:border-gold hover:bg-gold/10 transition text-xs space-y-1"
                           >
                             <div className="flex justify-between font-medium text-gold">
@@ -345,12 +360,18 @@ const Checkout = () => {
                   <Field
                     label="Full name"
                     value={address.name}
-                    onChange={(v) => setAddress({ ...address, name: v })}
+                    onChange={(v) => {
+                      setAddress({ ...address, name: v });
+                      setSaveAddressToProfile(true);
+                    }}
                   />
                   <Field
                     label="Phone number"
                     value={address.phone}
-                    onChange={(v) => setAddress({ ...address, phone: v })}
+                    onChange={(v) => {
+                      setAddress({ ...address, phone: v });
+                      setSaveAddressToProfile(true);
+                    }}
                   />
                   <div className="sm:col-span-2 relative">
                     <button
@@ -365,23 +386,35 @@ const Checkout = () => {
                     <Field
                       label="Address"
                       value={address.line}
-                      onChange={(v) => setAddress({ ...address, line: v })}
+                      onChange={(v) => {
+                        setAddress({ ...address, line: v });
+                        setSaveAddressToProfile(true);
+                      }}
                     />
                   </div>
                   <Field
                     label="City"
                     value={address.city}
-                    onChange={(v) => setAddress({ ...address, city: v })}
+                    onChange={(v) => {
+                      setAddress({ ...address, city: v });
+                      setSaveAddressToProfile(true);
+                    }}
                   />
                   <Field
                     label="State"
                     value={address.state}
-                    onChange={(v) => setAddress({ ...address, state: v })}
+                    onChange={(v) => {
+                      setAddress({ ...address, state: v });
+                      setSaveAddressToProfile(true);
+                    }}
                   />
                   <Field
                     label="Pincode"
                     value={address.pin}
-                    onChange={(v) => setAddress({ ...address, pin: v })}
+                    onChange={(v) => {
+                      setAddress({ ...address, pin: v });
+                      setSaveAddressToProfile(true);
+                    }}
                   />
                 </div>
                 
