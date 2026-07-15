@@ -241,8 +241,8 @@ export default function Categories() {
     }
   };
 
-  const productCountByCategory = (catId: string) =>
-    (products as any[]).filter((p: any) => p.category === catId).length;
+  const productCountByCategory = (category: Category) =>
+    (products as any[]).filter((p: any) => p.category === category.id || p.category === category.slug).length;
 
   return (
     <div className="space-y-6">
@@ -263,7 +263,7 @@ export default function Categories() {
           {categories.map((c, i) => {
             const accent = accentColors[i % accentColors.length];
             const imgSrc = getValidImage(c.image || "");
-            const count = productCountByCategory(c.id);
+            const count = productCountByCategory(c);
 
             return (
               <div key={c.id} className="card-lift bg-card rounded-2xl border border-border/50 shadow-card overflow-hidden group">

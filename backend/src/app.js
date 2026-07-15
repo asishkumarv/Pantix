@@ -11,6 +11,7 @@ import userRoutes from "./routes/userRoutes.js";
 import resellerRoutes from "./routes/resellerRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import enquiryRoutes from "./routes/enquiryRoutes.js";
 
 import pool from "./config/db.js";
 
@@ -61,6 +62,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/resellers", resellerRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/enquiries", enquiryRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

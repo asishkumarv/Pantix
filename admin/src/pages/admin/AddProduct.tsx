@@ -165,6 +165,15 @@ export default function AddProduct() {
     }
   }, [product]);
 
+  useEffect(() => {
+    if (product && categories.length > 0) {
+      const matchedCat = (categories as any[]).find((c: any) => c.id === product.category || c.slug === product.category);
+      if (matchedCat) {
+        setCategory(matchedCat.id);
+      }
+    }
+  }, [product, categories]);
+
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
       const url = isEdit ? `${API_URL}/api/products/${id}` : `${API_URL}/api/products`;

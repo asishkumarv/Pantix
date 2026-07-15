@@ -17,6 +17,7 @@ import Users from "./pages/admin/Users";
 import Resellers from "./pages/admin/Resellers";
 import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
+import Enquiries from "./pages/admin/Enquiries";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/products/edit/:id" element={<AddProduct />} />
               <Route path="/categories" element={<Categories />} />
               <Route path="/users" element={<Users />} />
+              <Route path="/enquiries" element={<Enquiries />} />
               <Route path="/resellers" element={<Resellers />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<Settings />} />

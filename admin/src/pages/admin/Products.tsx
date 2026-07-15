@@ -52,6 +52,21 @@ export default function Products({ collection }: { collection?: "budget" | "popu
     },
   });
 
+  const { data: categories = [] } = useQuery<any[]>({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await apiFetch(`${API_URL}/api/categories`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  const getCategoryName = (catId: string) => {
+    if (!catId) return "";
+    const cat = categories.find((c: any) => c.id === catId || c.slug === catId);
+    return cat ? cat.name : catId;
+  };
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiFetch(`${API_URL}/api/products/${id}`, { method: "DELETE" });
@@ -162,7 +177,7 @@ export default function Products({ collection }: { collection?: "budget" | "popu
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-semibold truncate">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.category} · {p.sku}</p>
+                    <p className="text-xs text-muted-foreground">{getCategoryName(p.category)} · {p.sku}</p>
                   </div>
                   <StatusBadge status={p.status} />
                 </div>
@@ -221,7 +236,7 @@ export default function Products({ collection }: { collection?: "budget" | "popu
                         <span className="font-medium">{p.name}</span>
                       </div>
                     </td>
-                    <td className="py-3 px-5 text-muted-foreground">{p.category}</td>
+                    <td className="py-3 px-5 text-muted-foreground">{getCategoryName(p.category)}</td>
                     <td className="py-3 px-5 text-muted-foreground font-mono text-xs">{p.sku}</td>
                     <td className="py-3 px-5 font-semibold">₹{p.price}</td>
                     <td className="py-3 px-5">{p.stock}</td>

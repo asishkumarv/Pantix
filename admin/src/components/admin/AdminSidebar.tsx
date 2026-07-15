@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, ShoppingCart, Package, PlusSquare, Tags,
-  Users as UsersIcon, Network, BarChart3, Settings, LogOut, Sparkles, X
+  Users as UsersIcon, Network, BarChart3, Settings, LogOut, Sparkles, X, MessageSquare
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ const items = [
   { to: "/products/new", label: "Add Product", icon: PlusSquare },
   { to: "/categories", label: "Categories", icon: Tags },
   { to: "/users", label: "Users", icon: UsersIcon },
+  { to: "/enquiries", label: "Enquiries", icon: MessageSquare },
   { to: "/resellers", label: "Resellers", icon: Network },
   { to: "/reports", label: "Reports", icon: BarChart3 },
   { to: "/settings", label: "Settings", icon: Settings },
