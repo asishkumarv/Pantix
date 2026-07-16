@@ -13,7 +13,7 @@ export const createRazorpayOrder = async (req, res) => {
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!keyId || !keySecret || keyId === "rzp_test_your_key_id") {
-      return res.status(500).json({ error: "Razorpay credentials not configured" });
+      return res.status(500).json({ error: "Razorpay credentials not configured in backend/.env" });
     }
 
     const response = await fetch("https://api.razorpay.com/v1/orders", {

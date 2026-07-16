@@ -2,3 +2,4 @@ node_modules/
 .workspace/
 .DS_Store
 backend/.env
+Pantix Latest/.env

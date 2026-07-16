@@ -191,7 +191,7 @@ const Checkout = () => {
     })
     .filter((i): i is typeof i & { product: NonNullable<typeof i["product"]> } => Boolean(i));
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0);
-  const shipping = subtotal > 2000 ? 0 : 99;
+  const shipping = 0;
   const total = subtotal + shipping;
 
   if (items.length === 0 && step !== 4) {

@@ -35,7 +35,7 @@ const Cart = () => {
     );
 
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0);
-  const shipping = subtotal > 2000 || subtotal === 0 ? 0 : 99;
+  const shipping = 0;
   const total = subtotal + shipping;
 
   if (items.length === 0) {
