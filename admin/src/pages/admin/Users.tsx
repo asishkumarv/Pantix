@@ -4,12 +4,26 @@ import PageHeader from "@/components/admin/PageHeader";
 import StatusBadge from "@/components/admin/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, UserPlus, Mail, Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Label } from "@/components/ui/label";
+import { Search, UserPlus, Mail, Loader2, Edit, Trash2, X, Eye, EyeOff } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/apiFetch";
+import { toast } from "sonner";
 
 export default function Users() {
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Edit Modal states
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editUserId, setEditUserId] = useState<any>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editRole, setEditRole] = useState("user");
+  const [editStatus, setEditStatus] = useState("Active");
+  const [editPassword, setEditPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ["users"],
@@ -19,6 +33,83 @@ export default function Users() {
       return res.json();
     },
   });
+
+  const updateMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await apiFetch(`${API_URL}/api/users/${payload.id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload.data),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update user");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("User updated successfully");
+      setShowEditModal(false);
+    },
+    onError: (err: any) => {
+      toast.error("Failed to update user", { description: err.message });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiFetch(`${API_URL}/api/users/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete user");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("User deleted successfully");
+    },
+    onError: (err: any) => {
+      toast.error("Failed to delete user", { description: err.message });
+    },
+  });
+
+  const handleOpenEditModal = (user: any) => {
+    setEditUserId(user.id);
+    setEditName(user.name || "");
+    setEditEmail(user.email || "");
+    setEditPhone(user.phone || "");
+    setEditRole(user.role || "user");
+    setEditStatus(user.status || "Active");
+    setEditPassword("");
+    setShowPassword(false);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateUser = () => {
+    if (!editName || !editEmail) {
+      toast.error("Name and Email are required");
+      return;
+    }
+    updateMutation.mutate({
+      id: editUserId,
+      data: {
+        name: editName,
+        email: editEmail,
+        phone: editPhone,
+        role: editRole,
+        status: editStatus,
+        password: editPassword,
+      },
+    });
+  };
+
+  const handleDeleteUser = (id: string) => {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+    deleteMutation.mutate(id);
+  };
 
   const filteredUsers = users.filter((u: any) => {
     const term = searchQuery.toLowerCase();
@@ -64,7 +155,7 @@ export default function Users() {
                   <th className="text-left font-medium py-3 px-5">Joined</th>
                   <th className="text-left font-medium py-3 px-5">Orders</th>
                   <th className="text-left font-medium py-3 px-5">Status</th>
-                  <th className="py-3 px-5"></th>
+                  <th className="py-3 px-5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -86,8 +177,26 @@ export default function Users() {
                     </td>
                     <td className="py-3 px-5 font-medium">0</td>
                     <td className="py-3 px-5"><StatusBadge status={u.status} /></td>
-                    <td className="py-3 px-5 text-right">
-                      <Button size="sm" variant="ghost" className="h-8"><Mail className="w-4 h-4" /></Button>
+                    <td className="py-3 px-5 text-right space-x-1">
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Email user"><Mail className="w-4 h-4" /></Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                        title="Edit user"
+                        onClick={() => handleOpenEditModal(u)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        title="Delete user"
+                        onClick={() => handleDeleteUser(u.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -96,6 +205,98 @@ export default function Users() {
           </div>
         )}
       </div>
+
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowEditModal(false)}
+          />
+
+          <div className="relative z-10 w-full max-w-md bg-card rounded-2xl border border-border/50 shadow-2xl p-6 space-y-5 animate-fade-in text-card-foreground">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">Edit User</h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Full Name</Label>
+                <Input value={editName} onChange={e => setEditName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone Number</Label>
+                <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} />
+              </div>
+              <div className="space-y-2 relative">
+                <Label>Password (Leave blank to keep current)</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={editPassword}
+                    onChange={e => setEditPassword(e.target.value)}
+                    placeholder="New password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <select
+                  value={editRole}
+                  onChange={e => setEditRole(e.target.value)}
+                  className="w-full bg-background border border-border rounded-md h-9 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="user">User / Customer</option>
+                  <option value="admin">Admin</option>
+                  <option value="admin-user">Admin User</option>
+                  <option value="Super Admin">Super Admin</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <select
+                  value={editStatus}
+                  onChange={e => setEditStatus(e.target.value)}
+                  className="w-full bg-background border border-border rounded-md h-9 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowEditModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdateUser}
+                disabled={updateMutation.isPending}
+                className="bg-primary-gradient text-white"
+              >
+                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
