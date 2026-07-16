@@ -5,7 +5,7 @@ import StatusBadge from "@/components/admin/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Mail, Loader2, Edit, Trash2, X, Eye, EyeOff } from "lucide-react";
+import { Search, UserPlus, Mail, Loader2, Edit, Trash2, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "sonner";
@@ -22,8 +22,6 @@ export default function Users() {
   const [editPhone, setEditPhone] = useState("");
   const [editRole, setEditRole] = useState("user");
   const [editStatus, setEditStatus] = useState("Active");
-  const [editPassword, setEditPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
 
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ["users"],
@@ -83,8 +81,6 @@ export default function Users() {
     setEditPhone(user.phone || "");
     setEditRole(user.role || "user");
     setEditStatus(user.status || "Active");
-    setEditPassword("");
-    setShowPassword(false);
     setShowEditModal(true);
   };
 
@@ -101,7 +97,6 @@ export default function Users() {
         phone: editPhone,
         role: editRole,
         status: editStatus,
-        password: editPassword,
       },
     });
   };
@@ -237,25 +232,7 @@ export default function Users() {
                 <Label>Phone Number</Label>
                 <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} />
               </div>
-              <div className="space-y-2 relative">
-                <Label>Password (Leave blank to keep current)</Label>
-                <div className="relative">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={editPassword}
-                    onChange={e => setEditPassword(e.target.value)}
-                    placeholder="New password"
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
+
               <div className="space-y-2">
                 <Label>Role</Label>
                 <select
