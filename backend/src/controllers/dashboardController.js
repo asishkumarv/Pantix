@@ -19,14 +19,22 @@ export const getStats = async (req, res) => {
       "SELECT status, COUNT(*) as count FROM orders GROUP BY status"
     );
     const statusCounts = {
-      Pending: 0,
-      Processing: 0,
+      Ordered: 0,
       Shipped: 0,
+      "Out for Delivery": 0,
       Delivered: 0,
       Cancelled: 0,
     };
     statusCountsResult.rows.forEach((row) => {
-      statusCounts[row.status] = parseInt(row.count);
+      let status = row.status;
+      if (status === 'Pending') status = 'Ordered';
+      else if (status === 'Processing') status = 'Shipped';
+      
+      if (statusCounts[status] !== undefined) {
+        statusCounts[status] += parseInt(row.count);
+      } else {
+        statusCounts[status] = parseInt(row.count);
+      }
     });
 
     // 3. Users count
@@ -55,9 +63,10 @@ export const getStats = async (req, res) => {
     res.json({
       revenue,
       orders: ordersCount,
-      pending: statusCounts.Pending + statusCounts.Processing,
+      pending: statusCounts.Ordered,
+      ordered: statusCounts.Ordered,
       delivered: statusCounts.Delivered,
-      shipped: statusCounts.Shipped,
+      shipped: statusCounts.Shipped + (statusCounts["Out for Delivery"] || 0),
       users: usersCount,
       resellers: resellersCount,
       products: productsCount,

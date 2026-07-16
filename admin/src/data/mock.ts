@@ -31,7 +31,7 @@ export const miniSparks = {
   products: [10, 12, 14, 18, 20, 22, 24, 26, 28, 29, 30, 30],
 };
 
-export type OrderStatus = "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
+export type OrderStatus = "Ordered" | "Shipped" | "Out for Delivery" | "Delivered" | "Cancelled";
 export type Order = {
   id: string;
   customer: string;
@@ -46,8 +46,8 @@ export type Order = {
 export const orders: Order[] = [
   { id: "PNX-1042", customer: "Aarav Mehta", email: "aarav@example.com", date: "2026-05-04", items: 3, total: 385, status: "Delivered", payment: "Paid" },
   { id: "PNX-1041", customer: "Priya Sharma", email: "priya@example.com", date: "2026-05-03", items: 1, total: 129, status: "Shipped", payment: "Paid" },
-  { id: "PNX-1040", customer: "Rohan Gupta", email: "rohan@example.com", date: "2026-05-03", items: 2, total: 248, status: "Processing", payment: "COD" },
-  { id: "PNX-1039", customer: "Ishita Roy", email: "ishita@example.com", date: "2026-05-02", items: 4, total: 612, status: "Pending", payment: "Paid" },
+  { id: "PNX-1040", customer: "Rohan Gupta", email: "rohan@example.com", date: "2026-05-03", items: 2, total: 248, status: "Out for Delivery", payment: "COD" },
+  { id: "PNX-1039", customer: "Ishita Roy", email: "ishita@example.com", date: "2026-05-02", items: 4, total: 612, status: "Ordered", payment: "Paid" },
   { id: "PNX-1038", customer: "Kabir Singh", email: "kabir@example.com", date: "2026-05-02", items: 1, total: 99, status: "Cancelled", payment: "Refunded" },
   { id: "PNX-1037", customer: "Meera Nair", email: "meera@example.com", date: "2026-05-01", items: 2, total: 220, status: "Delivered", payment: "Paid" },
   { id: "PNX-1036", customer: "Vivaan Patel", email: "vivaan@example.com", date: "2026-04-30", items: 5, total: 780, status: "Delivered", payment: "Paid" },

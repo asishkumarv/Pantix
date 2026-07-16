@@ -34,7 +34,7 @@ export type Order = {
   id: string;
   date: string;
   total: number;
-  status: "Processing" | "Shipped" | "Delivered" | "Cancelled";
+  status: "Ordered" | "Shipped" | "Out for Delivery" | "Delivered" | "Cancelled";
   items: { id: string; name: string; qty: number; price: number }[];
 };
 

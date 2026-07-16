@@ -3,7 +3,9 @@ import { OrderStatus } from "@/data/mock";
 
 const map: Record<string, string> = {
   Pending:    "bg-tint-yellow text-tint-yellow-fg",
+  Ordered:    "bg-tint-yellow text-tint-yellow-fg",
   Processing: "bg-tint-blue text-tint-blue-fg",
+  "Out for Delivery": "bg-tint-blue text-tint-blue-fg",
   Shipped:    "bg-tint-purple text-tint-purple-fg",
   Delivered:  "bg-tint-green text-tint-green-fg",
   Cancelled:  "bg-destructive/10 text-destructive",

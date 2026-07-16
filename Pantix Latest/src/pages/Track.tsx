@@ -6,12 +6,12 @@ import { Layout } from "@/components/Layout";
 
 type TrackOrder = {
   id: string;
-  status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
+  status: "Ordered" | "Shipped" | "Out for Delivery" | "Delivered" | "Cancelled";
   total: number;
   date: string;
 };
 
-const stepOrder = ["Pending", "Processing", "Shipped", "Delivered"] as const;
+const stepOrder = ["Ordered", "Shipped", "Out for Delivery", "Delivered"] as const;
 
 const Track = () => {
   const [searchParams] = useSearchParams();
@@ -50,9 +50,13 @@ const Track = () => {
       }
 
       const data = await res.json();
+      let mappedStatus = data.status;
+      if (mappedStatus === "Pending") mappedStatus = "Ordered";
+      else if (mappedStatus === "Processing") mappedStatus = "Shipped";
+
       setOrder({
         id: data.id,
-        status: data.status,
+        status: mappedStatus as TrackOrder["status"],
         total: Number(data.total || 0),
         date: data.date,
       });
@@ -119,9 +123,9 @@ const Track = () => {
                 style={{ width: `${Math.max(0, (currentStepIndex / 3) * 75)}%` }}
               />
               {[
-                { icon: ClipboardList, label: "Pending" },
-                { icon: Package, label: "Processing" },
-                { icon: Truck, label: "Shipped" },
+                { icon: ClipboardList, label: "Ordered" },
+                { icon: Package, label: "Shipped" },
+                { icon: Truck, label: "Out for Delivery" },
                 { icon: Check, label: "Delivered" },
               ].map((s, idx) => {
                 const done = currentStepIndex >= idx;

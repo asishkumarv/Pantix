@@ -9,7 +9,7 @@ import { Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 
-type OrderStatus = "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
+type OrderStatus = "Ordered" | "Shipped" | "Out for Delivery" | "Delivered" | "Cancelled";
 type PaymentStatus = "Paid" | "COD" | "Refunded";
 
 type ApiOrder = {
@@ -24,8 +24,8 @@ type ApiOrder = {
   address?: any;
 };
 
-const tabs: ("All" | OrderStatus)[] = ["All", "Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
-const statusOptions: OrderStatus[] = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
+const tabs: ("All" | OrderStatus)[] = ["All", "Ordered", "Shipped", "Out for Delivery", "Delivered", "Cancelled"];
+const statusOptions: OrderStatus[] = ["Ordered", "Shipped", "Out for Delivery", "Delivered", "Cancelled"];
 
 export default function Orders() {
   const queryClient = useQueryClient();

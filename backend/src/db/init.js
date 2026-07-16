@@ -49,7 +49,7 @@ const schema = `
     customer_email VARCHAR(255) NOT NULL,
     date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     total NUMERIC(10, 2) NOT NULL,
-    status VARCHAR(50) DEFAULT 'Pending',
+    status VARCHAR(50) DEFAULT 'Ordered',
     payment VARCHAR(50) DEFAULT 'COD',
     items JSONB NOT NULL,
     address JSONB

@@ -112,7 +112,7 @@ export const createOrder = async (req, res) => {
 
     const result = await client.query(
       `INSERT INTO orders (id, customer_name, customer_email, total, status, payment, items, address, reseller_id, reseller_commission)
-       VALUES ($1, $2, $3, $4, 'Pending', $5, $6, $7, $8, 0.00)
+       VALUES ($1, $2, $3, $4, 'Ordered', $5, $6, $7, $8, 0.00)
        RETURNING *`,
       [
         id,
