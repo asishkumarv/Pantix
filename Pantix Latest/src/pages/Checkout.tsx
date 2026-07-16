@@ -14,6 +14,16 @@ import { toast } from "sonner";
 
 type Step = 1 | 2 | 3 | 4;
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const Checkout = () => {
   const { cart, clearCart, getProduct, user, addresses, addAddress } = useStore();
   const navigate = useNavigate();
@@ -234,6 +244,82 @@ const Checkout = () => {
         color: i.color,
       }));
 
+      let razorpayOrderId = "";
+      if (payment === "online") {
+        const rzpOrderRes = await fetch(`${API_URL}/api/payments/create`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ amount: total }),
+        });
+
+        if (!rzpOrderRes.ok) {
+          const data = await rzpOrderRes.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to initiate online payment. Please try Cash on Delivery.");
+        }
+
+        const rzpOrderData = await rzpOrderRes.json();
+        razorpayOrderId = rzpOrderData.id;
+
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded) {
+          throw new Error("Razorpay payment gateway failed to load. Please check your internet connection.");
+        }
+
+        const paymentResponse = await new Promise<any>((resolve, reject) => {
+          const options = {
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_your_key_id",
+            amount: Math.round(total * 100),
+            currency: "INR",
+            name: "Pantix Store",
+            description: "Online Payment for Order",
+            order_id: razorpayOrderId,
+            handler: function (response: any) {
+              resolve(response);
+            },
+            prefill: {
+              name: address.name || user?.name || "",
+              contact: address.phone || user?.phone || "",
+              email: user?.email || "",
+            },
+            theme: {
+              color: "#D4AF37",
+            },
+            modal: {
+              ondismiss: function () {
+                reject(new Error("Payment window closed by user."));
+              },
+            },
+          };
+
+          const rzp = new (window as any).Razorpay(options);
+          rzp.on("payment.failed", function (response: any) {
+            reject(new Error(response.error.description || "Payment failed."));
+          });
+          rzp.open();
+        });
+
+        const verifyRes = await fetch(`${API_URL}/api/payments/verify`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            razorpay_order_id: paymentResponse.razorpay_order_id,
+            razorpay_payment_id: paymentResponse.razorpay_payment_id,
+            razorpay_signature: paymentResponse.razorpay_signature,
+          }),
+        });
+
+        if (!verifyRes.ok) {
+          const data = await verifyRes.json().catch(() => ({}));
+          throw new Error(data.error || "Payment verification failed.");
+        }
+      }
+
       const res = await fetch(`${API_URL}/api/orders`, {
         method: "POST",
         headers: {
@@ -243,7 +329,7 @@ const Checkout = () => {
         body: JSON.stringify({
           items: orderItems,
           total,
-          payment: payment === "online" ? "Online" : "COD",
+          payment: payment === "online" ? "Paid" : "COD",
           address,
           reseller_code: resellerCode || null,
           reseller_commission: resellerCommission || 0,
