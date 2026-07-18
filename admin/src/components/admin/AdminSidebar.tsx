@@ -56,7 +56,7 @@ export default function AdminSidebar({ open, onClose }: Props) {
 
       <aside
         className={cn(
-          "fixed lg:sticky top-0 left-0 z-50 h-[100dvh] w-[240px] shrink-0",
+          "fixed lg:sticky top-0 left-0 z-50 h-[100dvh] w-[240px] shrink-0 print:hidden",
           "bg-sidebar text-sidebar-foreground border-r border-sidebar-border",
           "flex flex-col transition-transform duration-300",
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"

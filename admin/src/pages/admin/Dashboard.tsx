@@ -11,23 +11,24 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 
+import { toast } from "sonner";
+
 export default function Dashboard() {
   const [stats, setStats] = useState<any>(null);
   const [revenueSeries, setRevenueSeries] = useState<any[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [range, setRange] = useState("7d");
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [statsRes, revRes, ordersRes] = await Promise.all([
+        const [statsRes, ordersRes] = await Promise.all([
           apiFetch(`${API_URL}/api/dashboard/stats`),
-          apiFetch(`${API_URL}/api/dashboard/revenue-report`),
           apiFetch(`${API_URL}/api/orders`)
         ]);
 
         if (statsRes.ok) setStats(await statsRes.json());
-        if (revRes.ok) setRevenueSeries(await revRes.json());
         if (ordersRes.ok) {
           const allOrders = await ordersRes.json();
           setRecentOrders(allOrders.slice(0, 5));
@@ -41,6 +42,39 @@ export default function Dashboard() {
 
     fetchDashboardData();
   }, []);
+
+  useEffect(() => {
+    const fetchRevenue = async () => {
+      try {
+        const revRes = await apiFetch(`${API_URL}/api/dashboard/revenue-report?range=${range}`);
+        if (revRes.ok) {
+          setRevenueSeries(await revRes.json());
+        }
+      } catch (err) {
+        console.error("Failed to fetch revenue series", err);
+      }
+    };
+    fetchRevenue();
+  }, [range]);
+
+  const handleExportCSV = () => {
+    if (!revenueSeries || revenueSeries.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+    const headers = ["Day/Date", "Revenue (INR)", "Orders Count"];
+    const rows = revenueSeries.map(r => [r.day, r.revenue, r.orders]);
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `revenue_report_${range}_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("CSV report exported successfully!");
+  };
 
   if (isLoading || !stats) {
     return <div className="p-8 text-center text-muted-foreground">Loading dashboard...</div>;
@@ -57,10 +91,10 @@ export default function Dashboard() {
         title="Dashboard Overview"
         subtitle="Real-time analytics & KPI insights · Last updated: Just now"
         actions={
-          <>
-            <Button variant="outline" size="sm">Export</Button>
-            <Button size="sm" className="bg-primary-gradient text-white shadow-glow">View report</Button>
-          </>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCSV}>Export CSV</Button>
+            <Button variant="outline" size="sm" onClick={() => window.print()}>Export PDF</Button>
+          </div>
         }
       />
 
@@ -85,14 +119,24 @@ export default function Dashboard() {
         <div className="lg:col-span-2 bg-card rounded-2xl shadow-card border border-border/50 p-5 lg:p-6">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h3 className="font-semibold">Revenue this week</h3>
+              <h3 className="font-semibold">Revenue overview</h3>
               <p className="text-xs text-muted-foreground mt-0.5">Total ₹{revenueSeries.reduce((a, b) => a + b.revenue, 0)}</p>
             </div>
             <div className="flex gap-1.5">
-              {["7D", "1M", "3M"].map((p, i) => (
-                <button key={p} className={`text-xs px-2.5 py-1 rounded-md transition-smooth ${
-                  i === 0 ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-                }`}>{p}</button>
+              {[
+                { label: "7D", val: "7d" },
+                { label: "1M", val: "1m" },
+                { label: "3M", val: "3m" },
+              ].map((p) => (
+                <button
+                  key={p.val}
+                  onClick={() => setRange(p.val)}
+                  className={`text-xs px-2.5 py-1 rounded-md transition-smooth ${
+                    range === p.val ? "bg-primary text-primary-foreground font-semibold" : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {p.label}
+                </button>
               ))}
             </div>
           </div>

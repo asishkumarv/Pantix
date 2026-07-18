@@ -38,6 +38,8 @@ export default function Orders() {
   const [tab, setTab] = useState<(typeof tabs)[number]>("All");
   const [q, setQ] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<ApiOrder | null>(null);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const { data: orders = [], isLoading, error } = useQuery<ApiOrder[]>({
     queryKey: ["orders"],
@@ -72,11 +74,26 @@ export default function Orders() {
   const filtered = useMemo(
     () =>
       orders.filter(
-        (o) =>
-          (tab === "All" || o.status === tab) &&
-          (q === "" || `${o.id} ${o.customer_name} ${o.customer_email}`.toLowerCase().includes(q.toLowerCase()))
+        (o) => {
+          const matchTab = tab === "All" || o.status === tab;
+          const matchQ = q === "" || `${o.id} ${o.customer_name} ${o.customer_email}`.toLowerCase().includes(q.toLowerCase());
+          
+          let matchDate = true;
+          if (startDate) {
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            matchDate = matchDate && new Date(o.date) >= start;
+          }
+          if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            matchDate = matchDate && new Date(o.date) <= end;
+          }
+          
+          return matchTab && matchQ && matchDate;
+        }
       ),
-    [orders, tab, q]
+    [orders, tab, q, startDate, endDate]
   );
 
   return (
@@ -84,23 +101,60 @@ export default function Orders() {
       <PageHeader title="Orders" subtitle={`${filtered.length} of ${orders.length} orders`} />
 
       <div className="bg-card rounded-2xl shadow-card border border-border/50 overflow-hidden">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-5 border-b border-border">
-          <div className="flex flex-wrap gap-1.5">
-            {tabs.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`text-xs px-3 py-1.5 rounded-md font-medium transition-smooth ${
-                  tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
+        <div className="flex flex-col gap-4 p-5 border-b border-border">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-1.5">
+              {tabs.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={`text-xs px-3 py-1.5 rounded-md font-medium transition-smooth ${
+                    tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            <div className="relative sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search orders..." className="pl-9 h-9" />
+            </div>
           </div>
-          <div className="relative sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search orders..." className="pl-9 h-9" />
+          
+          <div className="flex flex-wrap items-center gap-3 border-t border-border/50 pt-3">
+            <span className="text-xs font-medium text-muted-foreground">Filter by Date:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">From</span>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-8 text-xs w-36 bg-background/50"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">To</span>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-8 text-xs w-36 bg-background/50"
+              />
+            </div>
+            {(startDate || endDate) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                className="h-8 px-2 text-xs text-destructive hover:bg-destructive/10"
+              >
+                Clear Dates
+              </Button>
+            )}
           </div>
         </div>
 

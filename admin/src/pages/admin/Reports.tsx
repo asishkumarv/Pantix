@@ -79,7 +79,7 @@ export default function Reports() {
       <PageHeader
         title="Reports"
         subtitle="Detailed analytics across revenue, channels and products"
-        actions={<Button size="sm" variant="outline"><Download className="w-4 h-4" /> Download PDF</Button>}
+        actions={<Button size="sm" variant="outline" onClick={() => window.print()}><Download className="w-4 h-4 mr-1.5" /> Download PDF</Button>}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

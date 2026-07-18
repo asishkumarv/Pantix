@@ -81,17 +81,34 @@ export const getStats = async (req, res) => {
 
 export const getRevenueReport = async (req, res) => {
   try {
-    // Return aggregated revenue by day for the chart
+    const { range = "7d" } = req.query;
+    let interval = "7 days";
+    let dateFormat = "Dy";
+    
+    if (range.toLowerCase() === "1m") {
+      interval = "30 days";
+      dateFormat = "DD-Mon";
+    } else if (range.toLowerCase() === "3m") {
+      interval = "90 days";
+      dateFormat = "DD-Mon";
+    }
+
     const reportResult = await pool.query(`
       SELECT 
-        TO_CHAR(date, 'Dy') as day,
-        SUM(total) as revenue,
-        COUNT(*) as orders
-      FROM orders
-      WHERE date >= NOW() - INTERVAL '7 days' AND status != 'Cancelled'
-      GROUP BY TO_CHAR(date, 'Dy'), DATE_TRUNC('day', date)
-      ORDER BY DATE_TRUNC('day', date) ASC
-    `);
+        TO_CHAR(series_date, $1) as day,
+        COALESCE(SUM(o.total), 0) as revenue,
+        COALESCE(COUNT(o.id), 0) as orders
+      FROM (
+        SELECT generate_series(
+          DATE_TRUNC('day', NOW() - CAST($2 AS INTERVAL) + INTERVAL '1 day'),
+          DATE_TRUNC('day', NOW()),
+          INTERVAL '1 day'
+        )::date as series_date
+      ) s
+      LEFT JOIN orders o ON DATE_TRUNC('day', o.date) = s.series_date AND o.status != 'Cancelled'
+      GROUP BY series_date, TO_CHAR(series_date, $1)
+      ORDER BY series_date ASC
+    `, [dateFormat, interval]);
 
     const fallback = [
       { day: "Mon", revenue: 120, orders: 2 },

@@ -36,7 +36,7 @@ export default function AdminHeader({ onMenu }: { onMenu: () => void }) {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-[70px] bg-card/80 backdrop-blur-md border-b border-border shadow-card">
+    <header className="sticky top-0 z-30 h-[70px] bg-card/80 backdrop-blur-md border-b border-border shadow-card print:hidden">
       <div className="h-full flex items-center justify-between px-4 lg:px-8 gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <button
