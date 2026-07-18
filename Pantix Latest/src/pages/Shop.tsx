@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
 import { type Category } from "@/lib/products";
@@ -18,7 +18,17 @@ const BUDGETS = [
 const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL", "6XL", "Free Size"];
 
 const Shop = () => {
-  const { products, categories } = useStore();
+  const { products, categories, refreshProducts } = useStore();
+
+  useEffect(() => {
+    refreshProducts();
+
+    const interval = setInterval(() => {
+      refreshProducts();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [refreshProducts]);
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
   const [selectedBudgets, setSelectedBudgets] = useState<string[]>([]);
   const [maxPrice, setMaxPrice] = useState<number>(100000);

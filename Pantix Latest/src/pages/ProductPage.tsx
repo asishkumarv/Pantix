@@ -162,6 +162,12 @@ const ProductPage = () => {
 
   useEffect(() => {
     refreshProducts();
+
+    const interval = setInterval(() => {
+      refreshProducts();
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [id, refreshProducts]);
 
   // Sync size/color when product is loaded
