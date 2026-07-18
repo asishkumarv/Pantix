@@ -715,9 +715,8 @@ const ProductPage = () => {
             </div>
 
 
-            <div className="mt-8 grid grid-cols-3 gap-3 text-xs">
-              <Perk icon={Truck} label="Free shipping on all orders" />
-              <Perk icon={RefreshCw} label="Easy 7-day returns" />
+            <div className="mt-8 grid grid-cols-2 gap-3 text-xs">
+              <Perk icon={Truck} label="Free shipping over ₹1000" />
               <Perk icon={ShieldCheck} label="Authenticity assured" />
             </div>
           </div>
