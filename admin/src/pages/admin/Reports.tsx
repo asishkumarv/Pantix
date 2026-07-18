@@ -76,11 +76,35 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Reports"
-        subtitle="Detailed analytics across revenue, channels and products"
-        actions={<Button size="sm" variant="outline" onClick={() => window.print()}><Download className="w-4 h-4 mr-1.5" /> Download PDF</Button>}
-      />
+      {/* Web-Only Header */}
+      <div className="print:hidden">
+        <PageHeader
+          title="Reports"
+          subtitle="Detailed analytics across revenue, channels and products"
+          actions={<Button size="sm" variant="outline" onClick={() => window.print()}><Download className="w-4 h-4 mr-1.5" /> Download PDF</Button>}
+        />
+      </div>
+
+      {/* Hidden Print-Only Letterhead & Document Summary */}
+      <div className="hidden print:block mb-8 border-b-2 border-slate-300 pb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 font-display">PANTIX</h1>
+            <p className="text-sm text-slate-500 font-medium font-sans">Detailed Analytics & Sales Reports</p>
+          </div>
+          <div className="text-right text-xs text-slate-500 space-y-1 font-sans">
+            <p><strong>Generated:</strong> {new Date().toLocaleString('en-IN')}</p>
+            <p><strong>Report Scope:</strong> Channels & Products Analysis</p>
+          </div>
+        </div>
+        <div className="mt-6 border border-slate-200 bg-slate-50 p-4 rounded-lg font-sans">
+          <p className="text-xs font-semibold text-slate-700 mb-2">Executive Summary</p>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            This analytics document presents the sales and distribution metrics across the Pantix store. 
+            Detailed charts analyze the weekly revenue trajectory, distribution of orders across resellers, marketplace, and direct organic channels, and top performing product sales.
+          </p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 bg-card rounded-2xl shadow-card border border-border/50 p-5 lg:p-6">

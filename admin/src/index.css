@@ -373,3 +373,65 @@
 .scrollbar-gold::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, hsl(var(--gold)), hsl(var(--gold-deep)));
 }
+
+/* =========================================================
+   Print-friendly high-contrast layout overrides
+   ========================================================= */
+@media print {
+  body, html, main, .bg-background {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  /* Reset all typography to dark slate for high contrast */
+  h1, h2, h3, h4, h5, p, span, td, th, div, label {
+    color: #0f172a !important;
+    text-shadow: none !important;
+  }
+
+  /* Convert dark cards to clean white blocks with subtle borders */
+  .bg-card {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+  }
+
+  .bg-muted, .bg-muted\/40 {
+    background: #f1f5f9 !important;
+    background-color: #f1f5f9 !important;
+  }
+
+  /* Force standard dark borders */
+  .border, .border-border, .border-t, .border-b, .border-r, .border-l {
+    border-color: #e2e8f0 !important;
+  }
+
+  /* Ensure Recharts text labels are dark slate */
+  .recharts-text {
+    fill: #334155 !important;
+  }
+
+  .recharts-cartesian-grid-horizontal line, 
+  .recharts-cartesian-grid-vertical line {
+    stroke: #e2e8f0 !important;
+    stroke-opacity: 1 !important;
+  }
+
+  .recharts-cartesian-axis-line, 
+  .recharts-cartesian-axis-tick-line {
+    stroke: #94a3b8 !important;
+  }
+
+  /* Prevent elements from page-breaking awkwardly */
+  .bg-card, tr {
+    page-break-inside: avoid !important;
+  }
+
+  /* Hide print-hidden classes */
+  .print\:hidden {
+    display: none !important;
+  }
+}

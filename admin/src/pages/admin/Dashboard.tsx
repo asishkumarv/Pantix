@@ -62,10 +62,30 @@ export default function Dashboard() {
       toast.error("No data to export");
       return;
     }
-    const headers = ["Day/Date", "Revenue (INR)", "Orders Count"];
-    const rows = revenueSeries.map(r => [r.day, r.revenue, r.orders]);
+
+    const lines = [];
+
+    // Document Header
+    lines.push("PANTIX BUSINESS PERFORMANCE REPORT");
+    lines.push(`Generated On,${new Date().toLocaleString('en-IN')}`);
+    lines.push(`Authorized Scope,Admin Portal Overview`);
+    lines.push("");
+
+    // KPI Summary
+    lines.push("KPI OVERVIEW");
+    lines.push("Total Revenue,Total Orders,Delivered Orders,Total Users,Total Resellers,Total Products");
+    lines.push(`₹${stats.revenue},${stats.orders},${stats.delivered},${stats.users},${stats.resellers},${stats.products}`);
+    lines.push("");
+
+    // Chart Series
+    lines.push("DAILY TRAFFIC & REVENUE SERIES");
+    lines.push("Day/Date,Revenue (INR),Orders Count");
+    revenueSeries.forEach(r => {
+      lines.push(`${r.day},${r.revenue},${r.orders}`);
+    });
+
     const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+      + lines.map(e => e).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -87,16 +107,59 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 lg:space-y-8">
-      <PageHeader
-        title="Dashboard Overview"
-        subtitle="Real-time analytics & KPI insights · Last updated: Just now"
-        actions={
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportCSV}>Export CSV</Button>
-            <Button variant="outline" size="sm" onClick={() => window.print()}>Export PDF</Button>
+      {/* Web-Only Header */}
+      <div className="print:hidden">
+        <PageHeader
+          title="Dashboard Overview"
+          subtitle="Real-time analytics & KPI insights · Last updated: Just now"
+          actions={
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportCSV}>Export CSV</Button>
+              <Button variant="outline" size="sm" onClick={() => window.print()}>Export PDF</Button>
+            </div>
+          }
+        />
+      </div>
+
+      {/* Hidden Print-Only Letterhead & Document Summary */}
+      <div className="hidden print:block mb-8 border-b-2 border-slate-300 pb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 font-display">PANTIX</h1>
+            <p className="text-sm text-slate-500 font-medium font-sans">Business Performance & Analytics Report</p>
           </div>
-        }
-      />
+          <div className="text-right text-xs text-slate-500 space-y-1 font-sans">
+            <p><strong>Generated:</strong> {new Date().toLocaleString('en-IN')}</p>
+            <p><strong>Authorized Scope:</strong> Admin Overview Portal</p>
+          </div>
+        </div>
+        <div className="mt-6 grid grid-cols-3 gap-4 border border-slate-200 bg-slate-50 p-4 rounded-lg font-sans">
+          <div>
+            <p className="text-[10px] uppercase font-bold text-slate-500">Total Revenue</p>
+            <p className="text-lg font-bold text-slate-900">₹{stats.revenue.toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase font-bold text-slate-500">Total Orders</p>
+            <p className="text-lg font-bold text-slate-900">{stats.orders} (Pending: {stats.pending})</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase font-bold text-slate-500">Delivered Orders</p>
+            <p className="text-lg font-bold text-slate-900">{stats.delivered} (Shipped: {stats.shipped})</p>
+          </div>
+          <div className="mt-2">
+            <p className="text-[10px] uppercase font-bold text-slate-500">Total Users</p>
+            <p className="text-lg font-bold text-slate-900">{stats.users}</p>
+          </div>
+          <div className="mt-2">
+            <p className="text-[10px] uppercase font-bold text-slate-500">Network Resellers</p>
+            <p className="text-lg font-bold text-slate-900">{stats.resellers}</p>
+          </div>
+          <div className="mt-2">
+            <p className="text-[10px] uppercase font-bold text-slate-500">Active Products</p>
+            <p className="text-lg font-bold text-slate-900">{stats.products} (Low Stock: {stats.lowStock})</p>
+          </div>
+        </div>
+      </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
