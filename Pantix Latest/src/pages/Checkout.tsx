@@ -1,6 +1,7 @@
 import { API_URL } from "@/api";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@/lib/router-compat";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Check,
   CreditCard,
@@ -25,7 +26,7 @@ const loadRazorpayScript = () => {
 };
 
 const Checkout = () => {
-  const { cart, clearCart, getProduct, user, addresses, addAddress } = useStore();
+  const { cart, clearCart, getProduct, user, addresses, addAddress, refreshProducts } = useStore();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>(cart.length > 0 ? 2 : 1);
   const [orderId, setOrderId] = useState<string>("");
@@ -39,6 +40,7 @@ const Checkout = () => {
   });
   const [saveAddressToProfile, setSaveAddressToProfile] = useState(true);
   const [payment, setPayment] = useState<"online" | "cod">("online");
+  const [processingState, setProcessingState] = useState<"idle" | "verifying" | "success">("idle");
 
   useEffect(() => {
     if (!user) {
@@ -212,8 +214,66 @@ const Checkout = () => {
     );
   }
 
-  const placeOrder = async () => {
+  const checkStockAvailability = async () => {
+    toast.loading("Verifying stock levels...", { id: "checkout-stock-verify" });
     try {
+      await refreshProducts();
+      
+      for (const item of items) {
+        const freshProduct = getProduct(item.id);
+        if (!freshProduct) {
+          toast.error(`Product "${item.product.name}" not found.`, { id: "checkout-stock-verify" });
+          return false;
+        }
+
+        const qty = item.qty;
+
+        if (freshProduct.colors && freshProduct.colors.length > 0 && item.color && item.size) {
+          const colorObj: any = freshProduct.colors.find((c: any) => c.name === item.color);
+          if (colorObj && Array.isArray(colorObj.sizes)) {
+            const sizeObj = colorObj.sizes.find((s: any) => s.size === item.size);
+            if (!sizeObj || sizeObj.stock < qty) {
+              toast.error(
+                `"${item.product.name}" (Color: ${item.color}, Size: ${item.size}) is out of stock or has insufficient stock!`,
+                { id: "checkout-stock-verify", duration: 5000 }
+              );
+              return false;
+            }
+          } else {
+            if (freshProduct.stock !== undefined && freshProduct.stock < qty) {
+              toast.error(`"${item.product.name}" is out of stock!`, { id: "checkout-stock-verify", duration: 5000 });
+              return false;
+            }
+          }
+        } else {
+          if (freshProduct.stock !== undefined && freshProduct.stock < qty) {
+            toast.error(`"${item.product.name}" is out of stock!`, { id: "checkout-stock-verify", duration: 5000 });
+            return false;
+          }
+        }
+      }
+      
+      toast.dismiss("checkout-stock-verify");
+      return true;
+    } catch (err) {
+      toast.error("Failed to verify stock levels.", { id: "checkout-stock-verify" });
+      return false;
+    }
+  };
+
+  const handleContinueToPayment = async () => {
+    const isAvailable = await checkStockAvailability();
+    if (isAvailable) {
+      setStep(3);
+    }
+  };
+
+  const placeOrder = async () => {
+    let txnId = "";
+    try {
+      const isAvailable = await checkStockAvailability();
+      if (!isAvailable) return;
+
       const token = localStorage.getItem("pantix_token");
       if (!token) {
         toast.error("You must be logged in to place an order");
@@ -301,6 +361,10 @@ const Checkout = () => {
           rzp.open();
         });
 
+        txnId = paymentResponse?.razorpay_payment_id || "";
+
+        setProcessingState("verifying");
+
         const verifyRes = await fetch(`${API_URL}/api/payments/verify`, {
           method: "POST",
           headers: {
@@ -330,7 +394,7 @@ const Checkout = () => {
           items: orderItems,
           total,
           payment: payment === "online" ? "Paid" : "COD",
-          address,
+          address: payment === "online" && txnId ? { ...address, transaction_id: txnId } : address,
           reseller_code: resellerCode || null,
           reseller_commission: resellerCommission || 0,
         }),
@@ -350,7 +414,7 @@ const Checkout = () => {
           JSON.stringify({
             id: orderData.id,
             total,
-            address,
+            address: payment === "online" && txnId ? { ...address, transaction_id: txnId } : address,
             payment,
             items: orderItems,
             at: Date.now(),
@@ -380,11 +444,24 @@ const Checkout = () => {
         }
       }
 
-      clearCart();
-      setStep(4);
-      toast.success("Order placed successfully! 💖");
+      if (payment === "online") {
+        setProcessingState("success");
+        setTimeout(() => {
+          setStep(4);
+          clearCart();
+          refreshProducts();
+          setProcessingState("idle");
+          toast.success("Order placed successfully! 💖");
+        }, 3500);
+      } else {
+        clearCart();
+        refreshProducts();
+        setStep(4);
+        toast.success("Order placed successfully! 💖");
+      }
     } catch (err: any) {
       console.error(err);
+      setProcessingState("idle");
       toast.error(err.message || "Error placing order");
     }
   };
@@ -518,7 +595,7 @@ const Checkout = () => {
                 </div>
 
                 <button
-                  onClick={() => setStep(3)}
+                  onClick={handleContinueToPayment}
                   disabled={
                     !address.name ||
                     !address.phone ||
@@ -658,6 +735,112 @@ const Checkout = () => {
           )}
         </div>
       </div>
+
+      {/* Readability/Processing overlay */}
+      <AnimatePresence>
+        {processingState !== "idle" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-emerald-deep/95 backdrop-blur-md text-center p-6 select-none"
+          >
+            <div className="max-w-md w-full flex flex-col items-center">
+              
+              {/* Verification/Loading State */}
+              {processingState === "verifying" && (
+                <div className="space-y-6">
+                  <div className="relative w-20 h-20 mx-auto">
+                    {/* Outer spinning gold ring */}
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                      className="absolute inset-0 rounded-full border-4 border-gold/20 border-t-gold"
+                    />
+                    {/* Inner pulsing gold dot */}
+                    <motion.div
+                      animate={{ scale: [0.8, 1.2, 0.8] }}
+                      transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                      className="absolute inset-4 rounded-full bg-gold/5 opacity-80 grid place-items-center"
+                    >
+                      <div className="w-2.5 h-2.5 rounded-full bg-gold" />
+                    </motion.div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h3 className="font-display text-2xl text-gold tracking-wide">
+                      Verifying Payment
+                    </h3>
+                    <p className="text-sm text-foreground/75 max-w-xs mx-auto">
+                      Please do not refresh the page or close the window while we confirm your order...
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Success State */}
+              {processingState === "success" && (
+                <div className="space-y-6">
+                  <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
+                    {/* Expanding gold circle ring pulse */}
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+                      className="absolute inset-0 rounded-full border-2 border-gold/60"
+                    />
+                    
+                    {/* Main circular background with zoom-in checkmark */}
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 100, damping: 10 }}
+                      className="w-20 h-20 rounded-full bg-gradient-gold text-emerald-deep grid place-items-center border border-gold/40 shadow-royal"
+                    >
+                      {/* Animated Checkmark path SVG */}
+                      <svg
+                        className="w-10 h-10 stroke-current text-emerald-deep"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <motion.path
+                          initial={{ pathLength: 0 }}
+                          animate={{ pathLength: 1 }}
+                          transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
+                          d="M20 6L9 17L4 12"
+                        />
+                      </svg>
+                    </motion.div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <motion.h3
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="font-display text-3xl text-gold font-bold tracking-wide"
+                    >
+                      Payment Successful!
+                    </motion.h3>
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="text-sm text-foreground/80 max-w-xs mx-auto"
+                    >
+                      Your order is confirmed. Directing to receipt page...
+                    </motion.p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Layout>
   );
 };

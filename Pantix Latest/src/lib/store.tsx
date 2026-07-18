@@ -66,7 +66,7 @@ type StoreCtx = {
   categories: StoreCategory[];
   isLoadingCategories: boolean;
   getProduct: (id: string) => Product | undefined;
-  addToCart: (id: string, size: string, color: string, qty?: number, reseller_id?: string | number, reseller_margin?: string | number) => void;
+  addToCart: (id: string, size: string, color: string, qty?: number, reseller_id?: string | number, reseller_margin?: string | number) => boolean;
   updateQty: (id: string, size: string, color: string, qty: number) => void;
   removeFromCart: (id: string, size: string, color: string) => void;
   clearCart: () => void;
@@ -86,6 +86,7 @@ type StoreCtx = {
   removeAddress: (id: string) => void;
   enableReseller: () => Promise<boolean>;
   refreshUser: () => Promise<void>;
+  refreshProducts: () => Promise<void>;
 };
 
 const Ctx = createContext<StoreCtx | null>(null);
@@ -177,127 +178,119 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<StoreCategory[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
-  useEffect(() => {
-    let active = true;
+  const refreshProducts = useCallback(async () => {
     const API_BASE_URL = `${API_URL}`;
-
-    const fetchAll = async () => {
-      let rawProducts: any[] = [];
-      let rawCategories: any[] = [];
-      
-      try {
-        const prodRes = await fetch(`${API_BASE_URL}/api/products`);
-        if (prodRes.ok) {
-          rawProducts = await prodRes.json();
-        } else {
-          console.warn("Failed to fetch products from backend, falling back to static");
-          rawProducts = staticProducts;
-        }
-      } catch (err) {
-        console.error("Error fetching products from backend, falling back to static", err);
+    let rawProducts: any[] = [];
+    let rawCategories: any[] = [];
+    
+    try {
+      const prodRes = await fetch(`${API_BASE_URL}/api/products`);
+      if (prodRes.ok) {
+        rawProducts = await prodRes.json();
+      } else {
+        console.warn("Failed to fetch products from backend, falling back to static");
         rawProducts = staticProducts;
       }
+    } catch (err) {
+      console.error("Error fetching products from backend, falling back to static", err);
+      rawProducts = staticProducts;
+    }
 
-      try {
-        const catRes = await fetch(`${API_BASE_URL}/api/categories`);
-        if (catRes.ok) {
-          rawCategories = await catRes.json();
-        } else {
-          console.warn("Failed to fetch categories from backend, falling back to static");
-          rawCategories = staticCategories.map(c => ({ id: c.id, slug: c.id, name: c.label, image: c.image }));
-        }
-      } catch (err) {
-        console.error("Error fetching categories from backend, falling back to static", err);
+    try {
+      const catRes = await fetch(`${API_BASE_URL}/api/categories`);
+      if (catRes.ok) {
+        rawCategories = await catRes.json();
+      } else {
+        console.warn("Failed to fetch categories from backend, falling back to static");
         rawCategories = staticCategories.map(c => ({ id: c.id, slug: c.id, name: c.label, image: c.image }));
       }
+    } catch (err) {
+      console.error("Error fetching categories from backend, falling back to static", err);
+      rawCategories = staticCategories.map(c => ({ id: c.id, slug: c.id, name: c.label, image: c.image }));
+    }
 
-      if (!active) return;
+    const resolveImage = (img: string | null | undefined) => {
+      if (!img) return "";
+      if (img.startsWith("http")) return img;
+      if (img.startsWith("/uploads/")) return `${API_BASE_URL}${img}`;
+      if (img.startsWith("uploads/")) return `${API_BASE_URL}/${img}`;
+      
+      const filename = img.replace(/^\/+/, "");
+      if (imageByName[filename]) return imageByName[filename];
+      return `/images/${filename}`;
+    };
 
-      const resolveImage = (img: string | null | undefined) => {
-        if (!img) return "";
-        if (img.startsWith("http")) return img;
-        if (img.startsWith("/uploads/")) return `${API_BASE_URL}${img}`;
-        if (img.startsWith("uploads/")) return `${API_BASE_URL}/${img}`;
-        
-        const filename = img.replace(/^\/+/, "");
-        if (imageByName[filename]) return imageByName[filename];
-        return `/images/${filename}`;
+    // 1. Process and map Categories first
+    const mappedCats = rawCategories.map((c: any) => {
+      const imgPath = c.image;
+      const finalImage =
+        resolveImage(imgPath) ||
+        staticCategories.find((fc) => fc.id === c.slug)?.image ||
+        staticCategories[0]?.image ||
+        "";
+
+      return {
+        id: c.slug,
+        label: c.name,
+        image: finalImage,
       };
+    });
 
-      // 1. Process and map Categories first
-      const mappedCats = rawCategories.map((c: any) => {
-        const imgPath = c.image;
-        const finalImage =
-          resolveImage(imgPath) ||
-          staticCategories.find((fc) => fc.id === c.slug)?.image ||
-          staticCategories[0]?.image ||
-          "";
-
-        return {
-          id: c.slug,
-          label: c.name,
-          image: finalImage,
-        };
-      });
-
-      // 2. Process and map Products
-      const mappedProds = rawProducts.map((p: any): Product => {
-        let parsedColors = p.colors;
-        if (typeof p.colors === "string") {
-          try {
-            parsedColors = JSON.parse(p.colors);
-          } catch (e) {
-            parsedColors = null;
-          }
+    // 2. Process and map Products
+    const mappedProds = rawProducts.map((p: any): Product => {
+      let parsedColors = p.colors;
+      if (typeof p.colors === "string") {
+        try {
+          parsedColors = JSON.parse(p.colors);
+        } catch (e) {
+          parsedColors = null;
         }
+      }
 
-        if (Array.isArray(parsedColors)) {
-          parsedColors = parsedColors.map((c: any) => ({
-            ...c,
-            images: Array.isArray(c.images) ? c.images.map(resolveImage) : c.image ? [resolveImage(c.image)] : [],
-            image: c.image ? resolveImage(c.image) : undefined
-          }));
-        }
+      if (Array.isArray(parsedColors)) {
+        parsedColors = parsedColors.map((c: any) => ({
+          ...c,
+          images: Array.isArray(c.images) ? c.images.map(resolveImage) : c.image ? [resolveImage(c.image)] : [],
+          image: c.image ? resolveImage(c.image) : undefined
+        }));
+      }
 
-        // Lookup category by id/slug in backend response to resolve to its slug
-        const dbCategory = rawCategories.find(
-          (c: any) => c.id === p.category || c.slug === p.category
-        );
-        const frontendCategorySlug = dbCategory ? dbCategory.slug : p.category;
+      // Lookup category by id/slug in backend response to resolve to its slug
+      const dbCategory = rawCategories.find(
+        (c: any) => c.id === p.category || c.slug === p.category
+      );
+      const frontendCategorySlug = dbCategory ? dbCategory.slug : p.category;
 
-        return {
-          id: p.id,
-          name: p.name,
-          price: Number(p.price),
-          mrp: Number(p.mrp),
-          category: frontendCategorySlug,
-          categoryLabel: p.category_label || (dbCategory ? dbCategory.name : p.category || ""),
-          image: resolveImage(p.image),
-          images: Array.isArray(p.images) ? p.images.map(resolveImage) : [resolveImage(p.image)],
-          sizes: Array.isArray(p.sizes) ? p.sizes : [],
-          description: p.description || "",
-          inStock: p.in_stock !== undefined ? p.in_stock : true,
-          stock: p.stock !== undefined ? Number(p.stock) : undefined,
-          badge: p.badge || undefined,
-          colors: parsedColors || undefined,
-          isBudget: p.is_budget === true || p.is_budget === "true",
-          isPopular: p.is_popular === true || p.is_popular === "true",
-          commission_rate: Number(p.commission_rate) || 0,
-        };
-      });
+      return {
+        id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        mrp: Number(p.mrp),
+        category: frontendCategorySlug,
+        categoryLabel: p.category_label || (dbCategory ? dbCategory.name : p.category || ""),
+        image: resolveImage(p.image),
+        images: Array.isArray(p.images) ? p.images.map(resolveImage) : [resolveImage(p.image)],
+        sizes: Array.isArray(p.sizes) ? p.sizes : [],
+        description: p.description || "",
+        inStock: p.in_stock !== undefined ? p.in_stock : true,
+        stock: p.stock !== undefined ? Number(p.stock) : undefined,
+        badge: p.badge || undefined,
+        colors: parsedColors || undefined,
+        isBudget: p.is_budget === true || p.is_budget === "true",
+        isPopular: p.is_popular === true || p.is_popular === "true",
+        commission_rate: Number(p.commission_rate) || 0,
+      };
+    });
 
-      setCategories(mappedCats);
-      setIsLoadingCategories(false);
-      setProducts(mappedProds);
-      setIsLoadingProducts(false);
-    };
-
-    fetchAll();
-
-    return () => {
-      active = false;
-    };
+    setCategories(mappedCats);
+    setIsLoadingCategories(false);
+    setProducts(mappedProds);
+    setIsLoadingProducts(false);
   }, []);
+
+  useEffect(() => {
+    refreshProducts();
+  }, [refreshProducts]);
 
   const getProduct = useCallback(
     (id: string) => products.find((p) => p.id === id),
@@ -378,6 +371,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       cartCount: cart.reduce((s, i) => s + i.qty, 0),
       addToCart: (id, size, color, qty = 1, reseller_id, reseller_margin) => {
         const product = getProduct(id);
+        if (!product) {
+          toast.error("Product not found");
+          return false;
+        }
+
+        // Get available stock for selected variant or direct product
+        let availableStock = 0;
+        if (product.colors && product.colors.length > 0 && color && size) {
+          const colorObj: any = product.colors.find((c: any) => c.name === color);
+          if (colorObj && Array.isArray(colorObj.sizes)) {
+            const sizeObj = colorObj.sizes.find((s: any) => s.size === size);
+            availableStock = sizeObj ? Number(sizeObj.stock) : 0;
+          }
+        } else {
+          availableStock = product.stock !== undefined ? Number(product.stock) : 0;
+        }
+
+        // Check current qty already in cart
+        const existingItem = cart.find((item) => item.id === id && item.size === size && item.color === color);
+        const currentCartQty = existingItem ? existingItem.qty : 0;
+        const totalTargetQty = currentCartQty + qty;
+
+        if (totalTargetQty > availableStock) {
+          toast.error(`Cannot add more items. Only ${availableStock} items available in stock!`, {
+            description: `You already have ${currentCartQty} in cart. Available: ${availableStock}.`
+          });
+          return false;
+        }
+
         setCart((prev) => {
           const idx = prev.findIndex(
             (p) => p.id === id && p.size === size && p.color === color
@@ -392,8 +414,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         toast.success(product ? `${product.name} added` : "Added to cart", {
           description: `Size: ${size}${color ? `, Color: ${color}` : ""}`,
         });
+        return true;
       },
-      updateQty: (id, size, color, qty) =>
+      updateQty: (id, size, color, qty) => {
+        const product = getProduct(id);
+        if (!product) return;
+
+        let availableStock = 0;
+        if (product.colors && product.colors.length > 0 && color && size) {
+          const colorObj: any = product.colors.find((c: any) => c.name === color);
+          if (colorObj && Array.isArray(colorObj.sizes)) {
+            const sizeObj = colorObj.sizes.find((s: any) => s.size === size);
+            availableStock = sizeObj ? Number(sizeObj.stock) : 0;
+          }
+        } else {
+          availableStock = product.stock !== undefined ? Number(product.stock) : 0;
+        }
+
+        if (qty > availableStock) {
+          toast.error(`Only ${availableStock} items available in stock!`);
+          return;
+        }
+
         setCart((prev) =>
           prev
             .map((p) =>
@@ -402,7 +444,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                 : p
             )
             .filter((p) => p.qty > 0)
-        ),
+        );
+      },
       removeFromCart: (id, size, color) =>
         setCart((prev) =>
           prev.filter(
@@ -475,8 +518,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
       enableReseller,
       refreshUser,
+      refreshProducts,
     }),
-    [cart, wishlist, user, addresses, orders, login, register, products, getProduct, categories, isLoadingCategories, enableReseller, refreshUser]
+    [cart, wishlist, user, addresses, orders, login, register, products, getProduct, categories, isLoadingCategories, enableReseller, refreshUser, refreshProducts]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

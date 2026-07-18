@@ -83,7 +83,7 @@ const ProductPage = () => {
   const [searchParams] = useSearchParams();
   const refId = searchParams.get("rscode") || searchParams.get("ref");
 
-  const { addToCart, toggleWishlist, isWished, user, products, getProduct, isLoadingProducts } = useStore();
+  const { addToCart, toggleWishlist, isWished, user, products, getProduct, isLoadingProducts, refreshProducts } = useStore();
   const product = useMemo(() => (id ? getProduct(id) : undefined), [id, getProduct]);
   const isMock = useMemo(() => {
     if (!product) return true;
@@ -159,6 +159,10 @@ const ProductPage = () => {
 
   const commissionRate = product?.commission_rate || 0;
   const commissionAmount = product ? (product.price * commissionRate) / 100 : 0;
+
+  useEffect(() => {
+    refreshProducts();
+  }, [id, refreshProducts]);
 
   // Sync size/color when product is loaded
   useEffect(() => {
@@ -291,8 +295,10 @@ const ProductPage = () => {
       : "bg-emerald-bright/30 text-primary-glow border-gold/40";
 
   const handleBuy = () => {
-    addToCart(product.id, size, color, qty, refId ?? undefined);
-    navigate("/checkout");
+    const success = addToCart(product.id, size, color, qty, refId ?? undefined);
+    if (success) {
+      navigate("/checkout");
+    }
   };
 
   const submitReview = async (e: React.FormEvent) => {
@@ -703,14 +709,14 @@ const ProductPage = () => {
                 disabled={isProductSoldOut || currentStock === 0}
                 className="flex items-center justify-center gap-2 rounded-xl border-2 border-gold/40 bg-transparent py-3.5 text-sm font-bold text-gold uppercase tracking-wider hover:bg-gold/5 transition-colors disabled:opacity-50"
               >
-                Add to Cart
+                {isProductSoldOut || currentStock === 0 ? "Out of Stock" : "Add to Cart"}
               </button>
               <button
                 onClick={handleBuy}
                 disabled={!product.inStock || isProductSoldOut || currentStock === 0}
                 className="px-6 py-3.5 bg-gold text-primary-foreground uppercase tracking-wide text-sm font-medium hover:bg-primary-glow disabled:opacity-50 transition-colors shadow-gold"
               >
-                Buy Now
+                {isProductSoldOut || currentStock === 0 ? "Out of Stock" : "Buy Now"}
               </button>
             </div>
 

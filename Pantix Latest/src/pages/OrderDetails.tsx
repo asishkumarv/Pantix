@@ -86,9 +86,6 @@ export default function OrderDetails() {
     );
   }
 
-  const firstItem = order.items?.[0];
-  const product = firstItem ? getProduct(firstItem.id) : null;
-  const imageSrc = firstItem?.image || product?.image;
   const isDelivered = order.status.toLowerCase() === "delivered";
   
   // Extract real address
@@ -118,37 +115,47 @@ export default function OrderDetails() {
 
         <div className="max-w-3xl mx-auto p-4 space-y-4">
           
-          {/* Product Info Card */}
-          <Link 
-            to={firstItem?.id ? `/product/${firstItem.id}` : "#"} 
-            className="block"
-          >
-            <div className="bg-card border border-gold/20 rounded-md p-4 flex gap-4 shadow-sm hover:border-gold/50 transition cursor-pointer group">
-              {imageSrc ? (
-                <div className="h-28 w-20 shrink-0 overflow-hidden rounded border border-gold/20">
-                  <img src={imageSrc} alt={firstItem?.name || "Product"} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          {/* Products List Info Cards */}
+          {order.items?.map((item: any) => {
+            const prod = getProduct(item.id);
+            const img = item.image || prod?.image;
+            return (
+              <Link 
+                key={`${item.id}-${item.size}-${item.color || ""}`}
+                to={item.id ? `/product/${item.id}` : "#"} 
+                className="block"
+              >
+                <div className="bg-card border border-gold/20 rounded-md p-4 flex gap-4 shadow-sm hover:border-gold/50 transition cursor-pointer group">
+                  {img ? (
+                    <div className="h-28 w-20 shrink-0 overflow-hidden rounded border border-gold/20">
+                      <img src={img} alt={item.name || "Product"} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    </div>
+                  ) : (
+                    <div className="h-28 w-20 shrink-0 grid place-items-center rounded border border-gold/20 text-[10px] text-muted-foreground">
+                      No Image
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <p className="font-medium text-foreground text-sm uppercase tracking-widest mb-1.5">
+                      Order #{order.id}
+                    </p>
+                    <p className="text-base text-foreground/90 truncate mb-1">
+                      {item.name || "Premium Product"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Size: {item.size || "M"} {item.color ? `• Color: ${item.color}` : ""} {item.qty ? `• Qty: ${item.qty}` : ""}
+                    </p>
+                    <p className="text-xs text-gold/85 mt-1 font-medium">
+                      Price: {formatINR(Number(item.price || 0))}
+                    </p>
+                  </div>
+                  <div className="flex items-center">
+                    <ChevronLeft className="h-5 w-5 text-gold/40 rotate-180 group-hover:text-gold transition-colors" />
+                  </div>
                 </div>
-              ) : (
-                <div className="h-28 w-20 shrink-0 grid place-items-center rounded border border-gold/20 text-[10px] text-muted-foreground">
-                  No Image
-                </div>
-              )}
-              <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <p className="font-medium text-foreground text-sm uppercase tracking-widest mb-1.5">
-                  Order #{order.id}
-                </p>
-                <p className="text-base text-foreground/90 truncate mb-1">
-                  {firstItem?.name || product?.name || "Premium Product"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Size: {firstItem?.size || "M"} {firstItem?.qty ? `• Qty: ${firstItem.qty}` : ""}
-                </p>
-              </div>
-              <div className="flex items-center">
-                <ChevronLeft className="h-5 w-5 text-gold/40 rotate-180 group-hover:text-gold transition-colors" />
-              </div>
-            </div>
-          </Link>
+              </Link>
+            );
+          })}
 
 
           {/* Status Card */}
@@ -164,6 +171,13 @@ export default function OrderDetails() {
                 </p>
               </div>
             </div>
+            
+            {order.address?.transaction_id && (
+              <div className="border-t border-gold/15 pt-3 mt-3 text-xs text-muted-foreground space-y-1">
+                <p>Payment: <span className="text-gold font-medium">Paid Online</span></p>
+                <p>Transaction ID: <span className="font-mono text-foreground font-semibold">{order.address.transaction_id}</span></p>
+              </div>
+            )}
             
             {isDelivered && (
               <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3 rounded text-sm flex items-center gap-2">
