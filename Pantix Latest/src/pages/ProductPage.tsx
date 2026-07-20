@@ -941,7 +941,6 @@ const ProductPage = () => {
                     key={r.id}
                     className="p-5 border border-gold/25 bg-card/60 rounded-sm flex flex-col justify-between"
                   >
-                    <div>
                     {editingReviewId === r.id ? (
                       <form onSubmit={(e) => handleUpdateReview(e, r.id)} className="space-y-4">
                         <div>
