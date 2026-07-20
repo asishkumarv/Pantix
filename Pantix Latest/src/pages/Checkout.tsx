@@ -620,12 +620,12 @@ const Checkout = () => {
                     title="Online Payment"
                     desc="UPI · Cards · Net Banking · Wallets"
                   />
-                   <PayOption
+                  {/* <PayOption
                     active={payment === "cod"}
                     onClick={() => setPayment("cod")}
                     title="Cash on Delivery"
                     desc="Pay when you receive your order"
-                  />
+                  /> */}
                 </div>
                 <div className="mt-6 flex gap-3">
                   <button

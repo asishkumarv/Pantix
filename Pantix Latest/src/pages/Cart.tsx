@@ -35,7 +35,7 @@ const Cart = () => {
     );
 
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0);
-  const shipping = 0;
+  const shipping = subtotal >= 1000 ? 0 : 49;
   const total = subtotal + shipping;
 
   if (items.length === 0) {
@@ -154,12 +154,21 @@ const Cart = () => {
               Order Summary
             </h2>
             <div className="gold-divider mt-2 w-12" />
+
+            {subtotal < 1000 && (
+              <div className="mt-4 p-3 bg-gold/10 border border-gold/30 text-xs text-gold rounded text-center font-medium font-sans">
+                Shop <span className="font-bold text-amber-500">{formatINR(1000 - subtotal)}</span> more to get <span className="font-bold text-emerald-500">Free Shipping</span>!
+              </div>
+            )}
+
             <dl className="mt-5 space-y-3 text-sm">
               <Row label="Subtotal" value={formatINR(subtotal)} />
-              <Row
-                label="Shipping"
-                value={shipping === 0 ? "Free" : formatINR(shipping)}
-              />
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Shipping Charges</dt>
+                <dd className={shipping === 0 ? "text-emerald-500 font-medium" : "text-foreground"}>
+                  {shipping === 0 ? "Free" : formatINR(shipping)}
+                </dd>
+              </div>
               <div className="border-t border-gold/15 pt-3 flex justify-between">
                 <dt className="text-foreground font-medium">Total</dt>
                 <dd className="text-gold text-xl font-medium">
