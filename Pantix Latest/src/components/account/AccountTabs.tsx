@@ -233,6 +233,8 @@ export function OrdersTab({
             const productLink = firstItem ? `/product/${firstItem.id}` : undefined;
             // Resolve image: item.image (from order) or getProduct lookup
             const imageSrc = firstItem?.image || (firstItem?.id ? (getProduct(firstItem.id)?.image) : undefined);
+            const totalItems = o.items ? o.items.length : 0;
+            const totalQty = o.items ? o.items.reduce((acc: number, item: { qty?: number; quantity?: number }) => acc + (item.qty || item.quantity || 1), 0) : 0;
 
             return (
               <div 
@@ -242,19 +244,20 @@ export function OrdersTab({
               >
                 <div className="flex gap-4">
                   {/* Image Section */}
-                  {imageSrc ? (
-                    productLink ? (
-                      <Link to={productLink} className="h-24 w-20 shrink-0 block overflow-hidden rounded-sm border border-gold/20">
-                        <img src={imageSrc} alt={firstItem?.name || "product"} className="h-full w-full object-cover" />
-                      </Link>
-                    ) : (
-                      <div className="h-24 w-20 shrink-0 overflow-hidden rounded-sm border border-gold/20">
+                  <div className="relative h-24 w-20 shrink-0">
+                    {imageSrc ? (
+                      <div className="h-full w-full overflow-hidden rounded-sm border border-gold/20">
                         <img src={imageSrc} alt={firstItem?.name || "product"} className="h-full w-full object-cover" />
                       </div>
-                    )
-                  ) : (
-                    <div className="h-24 w-20 shrink-0 grid place-items-center rounded-sm border border-gold/20 text-[10px] text-muted-foreground text-center p-2">No image</div>
-                  )}
+                    ) : (
+                      <div className="h-full w-full grid place-items-center rounded-sm border border-gold/20 text-[10px] text-muted-foreground text-center p-2">No image</div>
+                    )}
+                    {o.items && o.items.length > 1 && (
+                      <div className="absolute top-1 right-1 bg-gold/90 text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-sm shadow-sm z-10">
+                        +{o.items.length - 1}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Details Section */}
                   <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -276,8 +279,9 @@ export function OrdersTab({
                     <p className="text-[11px] text-muted-foreground mb-1">
                       {firstItem && (
                         <span>
-                          Size: {firstItem.size || "Free"} • Qty: {firstItem.quantity || 1}
+                          Size: {firstItem.size || "Free"} • Qty: {firstItem.qty || firstItem.quantity || 1}
                           {o.items && o.items.length > 1 && ` • +${o.items.length - 1} more`}
+                          {` • Total Qty: ${totalQty}`}
                         </span>
                       )}
                     </p>

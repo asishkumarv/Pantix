@@ -55,6 +55,11 @@ const schema = `
     address JSONB
   );
 
+  CREATE TABLE IF NOT EXISTS order_status_dates (
+    order_id VARCHAR(100) PRIMARY KEY,
+    status_dates JSONB NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS resellers (
     id VARCHAR(100) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -88,13 +93,17 @@ async function initDB() {
     console.log("Initializing database tables...");
     await pool.query(schema);
     console.log("Ensuring new columns exist...");
-    await pool.query(`
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS is_budget BOOLEAN DEFAULT FALSE;
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS is_popular BOOLEAN DEFAULT FALSE;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS addresses JSONB DEFAULT '[]'::jsonb;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(10);
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp_expiry TIMESTAMP WITH TIME ZONE;
-    `);
+    try {
+      await pool.query(`
+        ALTER TABLE products ADD COLUMN IF NOT EXISTS is_budget BOOLEAN DEFAULT FALSE;
+        ALTER TABLE products ADD COLUMN IF NOT EXISTS is_popular BOOLEAN DEFAULT FALSE;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS addresses JSONB DEFAULT '[]'::jsonb;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(10);
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp_expiry TIMESTAMP WITH TIME ZONE;
+      `);
+    } catch (alterErr) {
+      console.warn("Skipping ALTER columns migrations (likely permission restriction on owned tables):", alterErr.message || alterErr);
+    }
     console.log("Database tables initialized successfully.");
     process.exit(0);
   } catch (err) {

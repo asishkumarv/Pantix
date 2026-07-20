@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 
 export const getAllOrders = async (req, res) => {
   try {
-    let query = "SELECT * FROM orders";
+    let query = "SELECT o.*, osd.status_dates FROM orders o LEFT JOIN order_status_dates osd ON o.id = osd.order_id";
     const params = [];
 
     // If user is not admin, only return their own orders
@@ -12,11 +12,11 @@ export const getAllOrders = async (req, res) => {
       req.user.role !== "Super Admin" &&
       req.user.role !== "admin-user"
     ) {
-      query += " WHERE customer_email = $1";
+      query += " WHERE o.customer_email = $1";
       params.push(req.user.email);
     }
 
-    query += " ORDER BY date DESC";
+    query += " ORDER BY o.date DESC";
 
     const result = await pool.query(query, params);
     res.json(result.rows);
@@ -29,7 +29,10 @@ export const getAllOrders = async (req, res) => {
 export const getOrderById = async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query("SELECT * FROM orders WHERE id = $1", [id]);
+    const result = await pool.query(
+      "SELECT o.*, osd.status_dates FROM orders o LEFT JOIN order_status_dates osd ON o.id = osd.order_id WHERE o.id = $1",
+      [id]
+    );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Order not found" });
     }
@@ -69,6 +72,7 @@ export const getOrderById = async (req, res) => {
       status: order.status,
       total: order.total,
       date: order.date,
+      status_dates: order.status_dates,
     });
   } catch (err) {
     console.error("GetOrderById error:", err);
@@ -110,6 +114,7 @@ export const createOrder = async (req, res) => {
       }
     }
 
+    const timestamp = new Date().toISOString();
     const result = await client.query(
       `INSERT INTO orders (id, customer_name, customer_email, total, status, payment, items, address, reseller_id, reseller_commission)
        VALUES ($1, $2, $3, $4, 'Ordered', $5, $6, $7, $8, 0.00)
@@ -124,6 +129,12 @@ export const createOrder = async (req, res) => {
         address ? JSON.stringify(address) : null,
         reseller_id
       ]
+    );
+
+    await client.query(
+      `INSERT INTO order_status_dates (order_id, status_dates)
+       VALUES ($1, $2)`,
+      [id, JSON.stringify({ Ordered: timestamp })]
     );
 
     // Decrement stock for each item based on color and size
@@ -211,7 +222,9 @@ export const createOrder = async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.status(201).json(result.rows[0]);
+    const orderData = result.rows[0];
+    orderData.status_dates = { Ordered: timestamp };
+    res.status(201).json(orderData);
   } catch (err) {
     await client.query('ROLLBACK');
     console.error("CreateOrder error:", err);
@@ -239,6 +252,7 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
+    const timestamp = new Date().toISOString();
     let query = "UPDATE orders SET status = $1";
     const params = [status];
 
@@ -251,6 +265,14 @@ export const updateOrderStatus = async (req, res) => {
     query += ` WHERE id = $${params.length} RETURNING *`;
 
     const result = await client.query(query, params);
+
+    await client.query(
+      `INSERT INTO order_status_dates (order_id, status_dates)
+       VALUES ($1, jsonb_build_object($2::text, $3::text))
+       ON CONFLICT (order_id)
+       DO UPDATE SET status_dates = COALESCE(order_status_dates.status_dates, '{}'::jsonb) || jsonb_build_object($2::text, $3::text)`,
+      [id, status, timestamp]
+    );
 
     // Handle commission state changes based on order status
     if (status === 'Delivered') {
@@ -268,7 +290,10 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.json(result.rows[0]);
+    const statusDatesRes = await client.query("SELECT status_dates FROM order_status_dates WHERE order_id = $1", [id]);
+    const orderData = result.rows[0];
+    orderData.status_dates = statusDatesRes.rows[0]?.status_dates || {};
+    res.json(orderData);
   } catch (err) {
     await client.query('ROLLBACK');
     console.error("UpdateOrderStatus error:", err);

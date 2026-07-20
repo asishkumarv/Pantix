@@ -3,8 +3,50 @@ import { useParams } from "react-router-dom";
 import { Link, useNavigate } from "@/lib/router-compat";
 import { useStore, formatINR } from "@/lib/store";
 import { Layout } from "@/components/Layout";
-import { ChevronLeft, HelpCircle, Star, Zap, Repeat, MapPin } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronLeft, HelpCircle, Star, Zap, Repeat, MapPin, ClipboardList, Package, Truck, Check } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+
+const getStatusDates = (orderDateStr: string, statusDates?: Record<string, string>, currentStatus?: string) => {
+  const dates: Record<string, string> = { ...statusDates };
+  const orderDate = new Date(orderDateStr);
+  
+  if (!dates.Ordered) {
+    dates.Ordered = orderDate.toISOString();
+  }
+  
+  const addDays = (date: Date, days: number) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    return d.toISOString();
+  };
+
+  const normStatus = (currentStatus || "").toLowerCase();
+
+  if (!dates.Shipped && (statusDates?.Shipped || ["shipped", "out for delivery", "delivered"].includes(normStatus))) {
+    dates.Shipped = addDays(orderDate, 1);
+  }
+
+  if (!dates["Out for Delivery"] && (statusDates?.["Out for Delivery"] || ["out for delivery", "delivered"].includes(normStatus))) {
+    dates["Out for Delivery"] = addDays(orderDate, 2);
+  }
+
+  if (!dates.Delivered && (statusDates?.Delivered || normStatus === "delivered")) {
+    dates.Delivered = addDays(orderDate, 5);
+  }
+  
+  return dates;
+};
+
+const formatStatusDate = (dateStr?: string) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  return {
+    date: d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }),
+    time: d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+  };
+};
+
+const stepOrder = ["Ordered", "Shipped", "Out for Delivery", "Delivered"] as const;
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -13,6 +55,22 @@ export default function OrderDetails() {
   
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const currentStepIndex = useMemo(() => {
+    if (!order) return -1;
+    const idx = stepOrder.indexOf(order.status as (typeof stepOrder)[number]);
+    return idx >= 0 ? idx : -1;
+  }, [order]);
+
+  const getDeliveryDays = () => {
+    if (!order) return 5;
+    const dates = getStatusDates(order.date, order.status_dates, order.status);
+    const orderedTime = new Date(dates.Ordered).getTime();
+    const deliveredTime = dates.Delivered ? new Date(dates.Delivered).getTime() : new Date().getTime();
+    const diffMs = deliveredTime - orderedTime;
+    const diffDays = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+    return diffDays;
+  };
 
   useEffect(() => {
     const normalizedSearchId = id?.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
@@ -46,6 +104,7 @@ export default function OrderDetails() {
             status: o.status,
             address: typeof o.address === "string" ? (() => { try { return JSON.parse(o.address); } catch { return o.address; } })() : o.address,
             items: typeof o.items === "string" ? (() => { try { return JSON.parse(o.items); } catch { return []; } })() : o.items || [],
+            status_dates: typeof o.status_dates === "string" ? (() => { try { return JSON.parse(o.status_dates); } catch { return {}; } })() : o.status_dates || {},
           }));
           
           found = apiOrders.find((o: any) => String(o.id).replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === normalizedSearchId);
@@ -146,7 +205,7 @@ export default function OrderDetails() {
                       Size: {item.size || "M"} {item.color ? `• Color: ${item.color}` : ""} {item.qty ? `• Qty: ${item.qty}` : ""}
                     </p>
                     <p className="text-xs text-gold/85 mt-1 font-medium">
-                      Price: {formatINR(Number(item.price || 0))}
+                      Price: {formatINR(Number(item.price || 0) * (item.qty || item.quantity || 1))}
                     </p>
                   </div>
                   <div className="flex items-center">
@@ -171,6 +230,57 @@ export default function OrderDetails() {
                 </p>
               </div>
             </div>
+
+            {/* Timeline of Status Updates */}
+            <div className="border-t border-gold/15 pt-5 mt-4">
+              <div className="grid grid-cols-4 gap-2 relative">
+                <div className="absolute top-5 left-[12.5%] right-[12.5%] h-px bg-gold/20" />
+                <div
+                  className="absolute top-5 left-[12.5%] h-px bg-gold"
+                  style={{ width: `${Math.max(0, (currentStepIndex / 3) * 75)}%` }}
+                />
+                {[
+                  { icon: ClipboardList, label: "Ordered" },
+                  { icon: Package, label: "Shipped" },
+                  { icon: Truck, label: "Out for Delivery" },
+                  { icon: Check, label: "Delivered" },
+                ].map((s, idx) => {
+                  const done = currentStepIndex >= idx;
+                  const dates = getStatusDates(order.date, order.status_dates, order.status);
+                  const stepDateInfo = done ? formatStatusDate(dates[s.label]) : null;
+                  return (
+                    <div key={s.label} className="relative flex flex-col items-center">
+                      <div
+                        className={`h-10 w-10 rounded-full grid place-items-center border-2 ${
+                          done
+                            ? "bg-gold border-gold text-primary-foreground"
+                            : "bg-card border-gold/30 text-muted-foreground"
+                        }`}
+                      >
+                        <s.icon className="h-4 w-4" />
+                      </div>
+                      <p className={`mt-2 text-xs font-semibold text-center ${done ? "text-gold" : "text-muted-foreground"}`}>
+                        {s.label}
+                      </p>
+                      {stepDateInfo ? (
+                        <div className="mt-1 flex flex-col items-center">
+                          <span className="text-[10px] text-muted-foreground text-center leading-tight">
+                            {stepDateInfo.date}
+                          </span>
+                          <span className="text-[9px] text-muted-foreground/70 text-center leading-none mt-0.5">
+                            {stepDateInfo.time}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground/30 text-center leading-tight mt-1">
+                          —
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             
             {order.address?.transaction_id && (
               <div className="border-t border-gold/15 pt-3 mt-3 text-xs text-muted-foreground space-y-1">
@@ -180,9 +290,11 @@ export default function OrderDetails() {
             )}
             
             {isDelivered && (
-              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3 rounded text-sm flex items-center gap-2">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3 rounded text-sm flex items-center gap-2 mt-4">
                 <Zap className="h-4 w-4 shrink-0" />
-                <span>Yay! Your order was delivered in just 5 days.</span>
+                <span>
+                  Yay! Your order was delivered in just {getDeliveryDays()} {getDeliveryDays() === 1 ? 'day' : 'days'}.
+                </span>
               </div>
             )}
           </div>

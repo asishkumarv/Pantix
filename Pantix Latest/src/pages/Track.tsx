@@ -9,9 +9,50 @@ type TrackOrder = {
   status: "Ordered" | "Shipped" | "Out for Delivery" | "Delivered" | "Cancelled";
   total: number;
   date: string;
+  status_dates?: Record<string, string>;
 };
 
 const stepOrder = ["Ordered", "Shipped", "Out for Delivery", "Delivered"] as const;
+
+const getStatusDates = (orderDateStr: string, statusDates?: Record<string, string>, currentStatus?: string) => {
+  const dates: Record<string, string> = { ...statusDates };
+  const orderDate = new Date(orderDateStr);
+  
+  if (!dates.Ordered) {
+    dates.Ordered = orderDate.toISOString();
+  }
+  
+  const addDays = (date: Date, days: number) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    return d.toISOString();
+  };
+
+  const normStatus = (currentStatus || "").toLowerCase();
+
+  if (!dates.Shipped && (statusDates?.Shipped || ["shipped", "out for delivery", "delivered"].includes(normStatus))) {
+    dates.Shipped = addDays(orderDate, 1);
+  }
+
+  if (!dates["Out for Delivery"] && (statusDates?.["Out for Delivery"] || ["out for delivery", "delivered"].includes(normStatus))) {
+    dates["Out for Delivery"] = addDays(orderDate, 2);
+  }
+
+  if (!dates.Delivered && (statusDates?.Delivered || normStatus === "delivered")) {
+    dates.Delivered = addDays(orderDate, 5);
+  }
+  
+  return dates;
+};
+
+const formatStatusDate = (dateStr?: string) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  return {
+    date: d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }),
+    time: d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+  };
+};
 
 const Track = () => {
   const [searchParams] = useSearchParams();
@@ -59,6 +100,7 @@ const Track = () => {
         status: mappedStatus as TrackOrder["status"],
         total: Number(data.total || 0),
         date: data.date,
+        status_dates: typeof data.status_dates === "string" ? (() => { try { return JSON.parse(data.status_dates); } catch { return {}; } })() : data.status_dates || {},
       });
     } catch (err: any) {
       setError(err.message || "Unable to fetch this order");
@@ -129,6 +171,8 @@ const Track = () => {
                 { icon: Check, label: "Delivered" },
               ].map((s, idx) => {
                 const done = currentStepIndex >= idx;
+                const dates = getStatusDates(order.date, order.status_dates, order.status);
+                const stepDateInfo = done ? formatStatusDate(dates[s.label]) : null;
                 return (
                   <div key={s.label} className="relative flex flex-col items-center">
                     <div
@@ -140,9 +184,23 @@ const Track = () => {
                     >
                       <s.icon className="h-4 w-4" />
                     </div>
-                    <p className={`mt-2 text-xs ${done ? "text-gold" : "text-muted-foreground"}`}>
+                    <p className={`mt-2 text-xs font-semibold text-center ${done ? "text-gold" : "text-muted-foreground"}`}>
                       {s.label}
                     </p>
+                    {stepDateInfo ? (
+                      <div className="mt-1 flex flex-col items-center">
+                        <span className="text-[10px] text-muted-foreground text-center leading-tight">
+                          {stepDateInfo.date}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground/70 text-center leading-none mt-0.5">
+                          {stepDateInfo.time}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground/30 text-center leading-tight mt-1">
+                        —
+                      </span>
+                    )}
                   </div>
                 );
               })}
