@@ -3,12 +3,14 @@ import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Package, Truck, Check, ClipboardList, Loader2 } from "lucide-react";
 import { Layout } from "@/components/Layout";
+import { formatINR } from "@/lib/store";
 
 type TrackOrder = {
   id: string;
   status: "Ordered" | "Shipped" | "Out for Delivery" | "Delivered" | "Cancelled";
   total: number;
   date: string;
+  items: any[];
   status_dates?: Record<string, string>;
 };
 
@@ -100,6 +102,7 @@ const Track = () => {
         status: mappedStatus as TrackOrder["status"],
         total: Number(data.total || 0),
         date: data.date,
+        items: typeof data.items === "string" ? (() => { try { return JSON.parse(data.items); } catch { return []; } })() : data.items || [],
         status_dates: typeof data.status_dates === "string" ? (() => { try { return JSON.parse(data.status_dates); } catch { return {}; } })() : data.status_dates || {},
       });
     } catch (err: any) {
@@ -204,6 +207,74 @@ const Track = () => {
                   </div>
                 );
               })}
+            </div>
+
+            {/* Items Ordered Card */}
+            <div className="mt-10 space-y-4">
+              <h3 className="font-display text-lg text-foreground border-b border-gold/25 pb-2">
+                Items Ordered
+              </h3>
+              <div className="space-y-3">
+                {order.items?.map((item: any) => {
+                  const qty = item.qty || item.quantity || 1;
+                  const unitPrice = Number(item.price || 0);
+                  const itemTotal = unitPrice * qty;
+                  return (
+                    <div 
+                      key={`${item.id}-${item.size}-${item.color || ""}`}
+                      className="flex gap-4 p-4 border border-gold/15 bg-card/45 rounded-sm"
+                    >
+                      {item.image ? (
+                        <img 
+                          src={item.image} 
+                          alt={item.name} 
+                          className="h-20 w-16 object-cover rounded-sm border border-gold/10 shrink-0" 
+                        />
+                      ) : (
+                        <div className="h-20 w-16 shrink-0 grid place-items-center bg-muted/20 border border-gold/10 text-[9px] text-muted-foreground">
+                          No Image
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground/90 truncate">
+                          {item.name || "Premium Product"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Size: {item.size || "M"} {item.color ? `• Color: ${item.color}` : ""}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Price: {formatINR(unitPrice)} x {qty}
+                        </p>
+                      </div>
+                      <p className="text-gold font-medium whitespace-nowrap self-center">
+                        {formatINR(itemTotal)}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Pricing Summary Card */}
+            <div className="mt-6 p-5 border border-gold/15 bg-card/65 rounded-sm space-y-2 text-sm">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Subtotal</span>
+                <span className="text-foreground font-medium">
+                  {formatINR(order.items?.reduce((acc: number, item: any) => acc + Number(item.price || 0) * (item.qty || item.quantity || 1), 0) || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Shipping Charge</span>
+                <span className="text-foreground font-medium">
+                  {order.total >= 1000 ? "Free" : "₹150"}
+                </span>
+              </div>
+              <div className="flex justify-between border-t border-gold/15 pt-2 text-base font-semibold">
+                <span className="text-foreground">Total Price</span>
+                <span className="text-gold">
+                  {formatINR(order.total)}
+                </span>
+              </div>
             </div>
 
             <div className="mt-8 text-sm text-foreground">

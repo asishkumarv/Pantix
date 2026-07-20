@@ -25,6 +25,7 @@ const resolveImage = (image: string | null | undefined, fallback: string) => {
   if (image.startsWith("/images/") || image.startsWith("images/")) {
     return image.startsWith("/") ? image : `/${image}`;
   }
+  if (image.startsWith("/")) return image;
   return `/images/${filename}`;
 };
 

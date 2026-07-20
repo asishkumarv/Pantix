@@ -18,6 +18,8 @@ const getValidImage = (img: string) => {
   if (img.startsWith("http")) return img;
   if (img.startsWith("/uploads/")) return `${API_URL}${img}`;
   if (img.startsWith("uploads/")) return `${API_URL}/${img}`;
+  if (img.startsWith("/images/")) return img;
+  if (img.startsWith("/")) return img;
   
   if (img.includes("frock")) return "/images/cat-frock.jpg";
   if (img.includes("plus-size")) return "/images/cat-plussize.jpg";

@@ -27,6 +27,8 @@ const getValidImage = (img: string) => {
   if (img.startsWith("http")) return img;
   if (img.startsWith("/uploads/")) return `${API_BASE_URL}${img}`;
   if (img.startsWith("uploads/")) return `${API_BASE_URL}/${img}`;
+  if (img.startsWith("/images/")) return img;
+  if (img.startsWith("/")) return img;
 
   const map: Record<string, string> = {
     "cat-2piece.jpg": "/images/cat-2piece.jpg",

@@ -53,6 +53,8 @@ export default function AddProduct() {
     if (img.startsWith("http")) return img;
     if (img.startsWith("/uploads/")) return `${API_BASE_URL}${img}`;
     if (img.startsWith("uploads/")) return `${API_BASE_URL}/${img}`;
+    if (img.startsWith("/images/")) return img;
+    if (img.startsWith("/")) return img;
     return `/images/${img}`;
   };
 
@@ -234,6 +236,10 @@ export default function AddProduct() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!category) {
+      toast.error("Category is required", { description: "Please select a category for this product." });
+      return;
+    }
     try {
       // 1. Upload files for each color in parallel
       toast.info("Uploading color specific images...");
@@ -801,7 +807,7 @@ export default function AddProduct() {
           <section className="bg-card rounded-2xl shadow-card border border-border/50 p-5 lg:p-6 space-y-4">
             <h3 className="font-semibold">Organisation</h3>
             <div className="space-y-2">
-              <Label>Category</Label>
+              <Label>Category *</Label>
               <Select value={category} onValueChange={(val) => {
                 setCategory(val);
                 const catObj = (categories as any[]).find((c: any) => c.id === val);

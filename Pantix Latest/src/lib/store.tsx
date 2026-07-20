@@ -215,6 +215,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (img.startsWith("http")) return img;
       if (img.startsWith("/uploads/")) return `${API_BASE_URL}${img}`;
       if (img.startsWith("uploads/")) return `${API_BASE_URL}/${img}`;
+      if (img.startsWith("/images/")) return img;
+      if (img.startsWith("/")) return img;
       
       const filename = img.replace(/^\/+/, "");
       if (imageByName[filename]) return imageByName[filename];

@@ -63,30 +63,13 @@ type Review = {
 
 const REVIEWS_KEY = (id: string) => `pantix:reviews:${id}`;
 
-const seedReviews = (productId: string): Review[] => [
-  {
-    id: "seed-1",
-    name: "Aanya K.",
-    rating: 5,
-    text: "Absolutely regal. The fabric and embroidery are stunning.",
-    date: "2024-12-12",
-  },
-  {
-    id: "seed-2",
-    name: "Riya S.",
-    rating: 5,
-    text: "Fits perfectly and looks even better in person. Worth every rupee.",
-    date: "2025-01-08",
-  },
-];
-
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const refId = searchParams.get("rscode") || searchParams.get("ref");
 
-  const { addToCart, toggleWishlist, isWished, user, products, getProduct, isLoadingProducts, refreshProducts } = useStore();
+  const { cart, addToCart, updateQty, removeFromCart, toggleWishlist, isWished, user, products, getProduct, isLoadingProducts, refreshProducts } = useStore();
   const product = useMemo(() => (id ? getProduct(id) : undefined), [id, getProduct]);
   const isMock = useMemo(() => {
     if (!product) return true;
@@ -169,6 +152,21 @@ const ProductPage = () => {
     return product.sizes || [];
   }, [product, color]);
 
+  const cartItem = useMemo(() => {
+    if (!product) return null;
+    return cart.find(
+      (c) => c.id === product.id && c.size === size && c.color === color
+    ) || null;
+  }, [cart, product, size, color]);
+
+  useEffect(() => {
+    if (cartItem) {
+      setQty(cartItem.qty);
+    } else {
+      setQty(1);
+    }
+  }, [cartItem]);
+
   const commissionRate = product?.commission_rate || 0;
   const commissionAmount = product ? (product.price * commissionRate) / 100 : 0;
 
@@ -182,21 +180,32 @@ const ProductPage = () => {
     return () => clearInterval(interval);
   }, [id, refreshProducts]);
 
+  // Reset selected color/size when the product ID changes
+  useEffect(() => {
+    setColor("");
+    setSize("");
+  }, [id]);
+
   // Sync size/color when product is loaded
   useEffect(() => {
     if (product) {
-      const firstColor = product.colors?.[0];
-      const defaultColor = firstColor?.name ?? "";
-      setColor(defaultColor);
+      const colorsList = product.colors || [];
+      const hasValidColor = colorsList.some((c: any) => c.name === color);
       
-      if (firstColor && Array.isArray(firstColor.sizes) && firstColor.sizes.length > 0) {
-        const firstAvailable = firstColor.sizes.find((s: any) => Number(s.stock) > 0);
-        setSize(firstAvailable ? firstAvailable.size : firstColor.sizes[0].size);
-      } else {
-        setSize(product.sizes[0] ?? "");
+      if (!color || !hasValidColor) {
+        const firstColor = colorsList[0];
+        const defaultColor = firstColor?.name ?? "";
+        setColor(defaultColor);
+        
+        if (firstColor && Array.isArray(firstColor.sizes) && firstColor.sizes.length > 0) {
+          const firstAvailable = firstColor.sizes.find((s: any) => Number(s.stock) > 0);
+          setSize(firstAvailable ? firstAvailable.size : firstColor.sizes[0].size);
+        } else {
+          setSize(product.sizes?.[0] ?? "");
+        }
       }
     }
-  }, [product]);
+  }, [product, color]);
 
   // Reset active thumb when color changes
   useEffect(() => {
@@ -221,7 +230,7 @@ const ProductPage = () => {
         const res = await fetch(`${API_URL}/api/products/${id}/reviews`);
         if (!res.ok) throw new Error("Failed to fetch reviews");
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setReviews(data.map((r: any) => ({
             id: String(r.id),
             name: r.name,
@@ -231,15 +240,15 @@ const ProductPage = () => {
             user_email: r.user_email,
           })));
         } else {
-          setReviews(seedReviews(id));
+          setReviews([]);
         }
       } catch (err) {
-        console.error("Database fetch failed, using local/seeded reviews:", err);
+        console.error("Database fetch failed, using local reviews:", err);
         try {
           const raw = localStorage.getItem(REVIEWS_KEY(id));
-          setReviews(raw ? JSON.parse(raw) : seedReviews(id));
+          setReviews(raw ? JSON.parse(raw) : []);
         } catch {
-          setReviews(seedReviews(id));
+          setReviews([]);
         }
       }
     };
@@ -777,14 +786,40 @@ const ProductPage = () => {
               </p>
               <div className="inline-flex items-center border border-gold/30">
                 <button
-                  onClick={() => setQty(Math.max(1, qty - 1))}
+                  onClick={() => {
+                    const nextQty = qty - 1;
+                    if (nextQty < 1) {
+                      if (cartItem) {
+                        if (window.confirm("Remove item from cart?")) {
+                          removeFromCart(product.id, size, color || "");
+                        }
+                      }
+                      return;
+                    }
+                    if (cartItem) {
+                      updateQty(product.id, size, color || "", nextQty);
+                    } else {
+                      setQty(nextQty);
+                    }
+                  }}
                   className="p-2 text-gold hover:bg-gold/10"
                 >
                   <Minus className="h-3.5 w-3.5" />
                 </button>
                 <span className="w-10 text-center text-sm">{qty}</span>
                 <button
-                  onClick={() => setQty(qty + 1)}
+                  onClick={() => {
+                    const nextQty = qty + 1;
+                    if (nextQty > currentStock) {
+                      toast.error(`Cannot add more items. Only ${currentStock} items available in stock!`);
+                      return;
+                    }
+                    if (cartItem) {
+                      updateQty(product.id, size, color || "", nextQty);
+                    } else {
+                      setQty(nextQty);
+                    }
+                  }}
                   className="p-2 text-gold hover:bg-gold/10"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -800,11 +835,21 @@ const ProductPage = () => {
 
             <div className="p-4 grid grid-cols-[1fr_1.5fr] gap-3">
               <button
-                onClick={() => addToCart(product.id, size, color, qty, refId ?? undefined)}
+                onClick={() => {
+                  if (cartItem) {
+                    navigate("/checkout");
+                  } else {
+                    addToCart(product.id, size, color || "", qty, refId ?? undefined);
+                  }
+                }}
                 disabled={isProductSoldOut || currentStock === 0}
-                className="flex items-center justify-center gap-2 rounded-xl border-2 border-gold/40 bg-transparent py-3.5 text-sm font-bold text-gold uppercase tracking-wider hover:bg-gold/5 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-2 rounded-xl border-2 border-gold/40 bg-transparent py-3.5 text-sm font-bold text-gold uppercase tracking-wider hover:bg-gold/5 transition-colors disabled:opacity-50 text-center"
               >
-                {isProductSoldOut || currentStock === 0 ? "Out of Stock" : "Add to Cart"}
+                {isProductSoldOut || currentStock === 0 
+                  ? "Out of Stock" 
+                  : cartItem 
+                    ? "Go to Checkout" 
+                    : "Add to Cart"}
               </button>
               <button
                 onClick={handleBuy}

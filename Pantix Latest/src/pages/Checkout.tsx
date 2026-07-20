@@ -26,7 +26,7 @@ const loadRazorpayScript = () => {
 };
 
 const Checkout = () => {
-  const { cart, clearCart, getProduct, user, addresses, addAddress, refreshProducts } = useStore();
+  const { cart, clearCart, getProduct, user, addresses, addAddress, refreshProducts, updateQty, removeFromCart } = useStore();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>(cart.length > 0 ? 2 : 1);
   const [orderId, setOrderId] = useState<string>("");
@@ -479,7 +479,7 @@ const Checkout = () => {
             step === 4 ? "grid-cols-1" : "lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]"
           }`}
         >
-          <div>
+          <div className="order-2 lg:order-1">
             {step === 2 && (
               <Card title="Shipping Address" icon={MapPin}>
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -619,12 +619,12 @@ const Checkout = () => {
                     title="Online Payment"
                     desc="UPI · Cards · Net Banking · Wallets"
                   />
-                  <PayOption
+                  {/* <PayOption
                     active={payment === "cod"}
                     onClick={() => setPayment("cod")}
                     title="Cash on Delivery"
                     desc="Pay when you receive your order"
-                  />
+                  /> */}
                 </div>
                 <div className="mt-6 flex gap-3">
                   <button
@@ -677,10 +677,10 @@ const Checkout = () => {
           </div>
 
           {step !== 4 && (
-            <aside className="h-fit p-6 md:p-7 border border-gold/25 bg-card/60 rounded-lg shadow-royal">
+            <aside className="order-1 lg:order-2 h-fit p-6 md:p-7 border border-gold/25 bg-card/60 rounded-lg shadow-royal">
               <h3 className="font-display text-xl text-foreground">Summary</h3>
               <div className="gold-divider mt-2 w-12" />
-              <ul className="mt-4 space-y-3 max-h-64 overflow-auto">
+              <ul className="mt-4 space-y-3 max-h-80 overflow-auto">
                 {items.map((i) => {
                   let displayImage = i.product.image;
                   if (i.color && i.product.colors) {
@@ -693,22 +693,58 @@ const Checkout = () => {
                   return (
                     <li
                       key={`${i.id}-${i.size}-${i.color || ""}`}
-                      className="flex gap-3 text-sm"
+                      className="flex gap-3 text-sm border-b border-gold/10 pb-3"
                     >
                       <img
                         src={displayImage}
                         alt=""
-                        className="h-14 w-12 object-cover"
+                        className="h-14 w-12 object-cover rounded-sm shrink-0"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-foreground line-clamp-1">
                           {i.product.name}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {i.size} {i.color ? `· Color: ${i.color}` : ""} · Qty {i.qty}
+                        <p className="text-xs text-muted-foreground mb-1">
+                          {i.size} {i.color ? `· Color: ${i.color}` : ""}
                         </p>
+                        
+                        <div className="flex items-center gap-2 mt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (i.qty > 1) {
+                                updateQty(i.id, i.size, i.color || "", i.qty - 1);
+                              } else {
+                                removeFromCart(i.id, i.size, i.color || "");
+                              }
+                            }}
+                            className="w-5 h-5 rounded border border-gold/30 flex items-center justify-center text-xs text-gold hover:bg-gold/10 transition-colors"
+                          >
+                            -
+                          </button>
+                          <span className="text-xs font-semibold text-foreground w-5 text-center">
+                            {i.qty}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              updateQty(i.id, i.size, i.color || "", i.qty + 1);
+                            }}
+                            className="w-5 h-5 rounded border border-gold/30 flex items-center justify-center text-xs text-gold hover:bg-gold/10 transition-colors"
+                          >
+                            +
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(i.id, i.size, i.color || "")}
+                            className="ml-auto text-xs text-destructive hover:text-red-400 font-semibold uppercase tracking-wider pl-2"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
-                      <p className="text-gold whitespace-nowrap">
+                      <p className="text-gold whitespace-nowrap font-medium self-start">
                         {formatINR(i.product.price * i.qty)}
                       </p>
                     </li>
@@ -730,6 +766,11 @@ const Checkout = () => {
                     {formatINR(total)}
                   </span>
                 </div>
+              </div>
+              
+              {/* Mobile-only scroll notice */}
+              <div className="block lg:hidden mt-5 p-3.5 bg-gold/10 border border-gold/30 text-[11px] text-gold font-bold rounded text-center uppercase tracking-wider animate-pulse">
+                Scroll down to select payment option & place order ↓
               </div>
             </aside>
           )}
