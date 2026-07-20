@@ -216,6 +216,25 @@ export default function OrderDetails() {
             );
           })}
 
+          {/* Order Summary Card */}
+          <div className="bg-card border border-gold/20 rounded-md p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4 text-foreground border-b border-gold/15 pb-2">
+              <ClipboardList className="h-5 w-5 text-gold" />
+              <h3 className="font-medium">Order Summary</h3>
+            </div>
+            <div className="space-y-2 text-sm pl-7">
+              {order.items?.map((item: { id: string; name?: string; qty?: number; quantity?: number; price?: number; size?: string; color?: string }) => (
+                <div key={`${item.id}-${item.size}-${item.color || ""}`} className="flex justify-between text-muted-foreground">
+                  <span>{item.name || "Product"} (x{item.qty || item.quantity || 1})</span>
+                  <span>{formatINR(Number(item.price || 0) * (item.qty || item.quantity || 1))}</span>
+                </div>
+              ))}
+              <div className="border-t border-gold/15 pt-2 flex justify-between font-semibold text-base text-foreground mt-2">
+                <span>Total Order Price</span>
+                <span className="text-gold">{formatINR(order.total)}</span>
+              </div>
+            </div>
+          </div>
 
           {/* Status Card */}
           <div className="bg-card border border-gold/20 rounded-md p-5 shadow-sm">

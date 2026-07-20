@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import jwt from "jsonwebtoken";
 
 export const getAllProducts = async (req, res) => {
   const { category, search, status } = req.query;
@@ -231,7 +232,11 @@ export const getProductReviews = async (req, res) => {
   const { productId } = req.params;
   try {
     const result = await pool.query(
-      "SELECT * FROM reviews WHERE product_id = $1 ORDER BY date DESC",
+      `SELECT r.*, rue.user_email 
+       FROM reviews r 
+       LEFT JOIN review_user_emails rue ON r.id = rue.review_id 
+       WHERE r.product_id = $1 
+       ORDER BY r.date DESC`,
       [productId]
     );
     res.json(result.rows);
@@ -254,6 +259,18 @@ export const createProductReview = async (req, res) => {
     return res.status(400).json({ error: "Rating must be between 1 and 5" });
   }
 
+  // Optional authentication check to associate review with user email
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  let user = null;
+  if (token) {
+    try {
+      user = jwt.verify(token, process.env.JWT_SECRET || "pantix_jwt_secret_key_123_456_789");
+    } catch (e) {
+      // Treat invalid token as guest
+    }
+  }
+
   try {
     const checkProduct = await pool.query("SELECT id FROM products WHERE id = $1", [productId]);
     if (checkProduct.rows.length === 0) {
@@ -266,10 +283,105 @@ export const createProductReview = async (req, res) => {
        RETURNING *`,
       [productId, name, ratingVal, text]
     );
+    const newReview = result.rows[0];
 
-    res.status(201).json(result.rows[0]);
+    if (user && user.email) {
+      await pool.query(
+        "INSERT INTO review_user_emails (review_id, user_email) VALUES ($1, $2)",
+        [newReview.id, user.email]
+      );
+      newReview.user_email = user.email;
+    }
+
+    res.status(201).json(newReview);
   } catch (err) {
     console.error("CreateProductReview error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const deleteProductReview = async (req, res) => {
+  const { productId, reviewId } = req.params;
+  const user = req.user; // populated by authenticateToken middleware
+
+  try {
+    const reviewRes = await pool.query(
+      `SELECT r.*, rue.user_email 
+       FROM reviews r 
+       LEFT JOIN review_user_emails rue ON r.id = rue.review_id 
+       WHERE r.id = $1`,
+      [reviewId]
+    );
+
+    if (reviewRes.rows.length === 0) {
+      return res.status(404).json({ error: "Review not found" });
+    }
+
+    const review = reviewRes.rows[0];
+    const isAdmin = user.role === "admin" || user.role === "Super Admin" || user.role === "admin-user";
+    const isOwner = review.user_email && review.user_email.toLowerCase() === user.email.toLowerCase();
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: "You are not authorized to delete this review" });
+    }
+
+    await pool.query("DELETE FROM reviews WHERE id = $1", [reviewId]);
+    res.json({ message: "Review deleted successfully" });
+  } catch (err) {
+    console.error("DeleteProductReview error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const updateProductReview = async (req, res) => {
+  const { productId, reviewId } = req.params;
+  const { rating, text } = req.body;
+  const user = req.user; // populated by authenticateToken middleware
+
+  if (!rating || !text) {
+    return res.status(400).json({ error: "Rating and text are required" });
+  }
+
+  const ratingVal = parseInt(rating, 10);
+  if (isNaN(ratingVal) || ratingVal < 1 || ratingVal > 5) {
+    return res.status(400).json({ error: "Rating must be between 1 and 5" });
+  }
+
+  try {
+    const reviewRes = await pool.query(
+      `SELECT r.*, rue.user_email 
+       FROM reviews r 
+       LEFT JOIN review_user_emails rue ON r.id = rue.review_id 
+       WHERE r.id = $1`,
+      [reviewId]
+    );
+
+    if (reviewRes.rows.length === 0) {
+      return res.status(404).json({ error: "Review not found" });
+    }
+
+    const review = reviewRes.rows[0];
+    const isOwner = review.user_email && review.user_email.toLowerCase() === user.email.toLowerCase();
+
+    if (!isOwner) {
+      return res.status(403).json({ error: "You are not authorized to edit this review" });
+    }
+
+    const result = await pool.query(
+      `UPDATE reviews 
+       SET rating = $1, text = $2 
+       WHERE id = $3 
+       RETURNING *`,
+      [ratingVal, text, reviewId]
+    );
+    
+    // Add user_email back to the returned object so frontend state maps it correctly
+    const updatedReview = result.rows[0];
+    updatedReview.user_email = review.user_email;
+
+    res.json(updatedReview);
+  } catch (err) {
+    console.error("UpdateProductReview error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 };

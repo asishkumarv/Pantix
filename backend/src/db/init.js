@@ -79,6 +79,11 @@ const schema = `
     date TIMESTAMP WITH TIME ZONE DEFAULT NOW()
   );
 
+  CREATE TABLE IF NOT EXISTS review_user_emails (
+    review_id INT PRIMARY KEY REFERENCES reviews(id) ON DELETE CASCADE,
+    user_email VARCHAR(255) NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS uploads (
     id SERIAL PRIMARY KEY,
     filename VARCHAR(255) NOT NULL UNIQUE,

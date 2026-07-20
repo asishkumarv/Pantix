@@ -1,7 +1,9 @@
 import { Bell, RefreshCw, ChevronDown, Menu, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { apiFetch } from "@/lib/apiFetch";
+import { API_URL } from "@/api";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger
@@ -29,10 +31,67 @@ export default function AdminHeader({ onMenu }: { onMenu: () => void }) {
   const [spinning, setSpinning] = useState(false);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
 
-  const refresh = () => {
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const formatRelativeTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return "just now";
+    const diffSecs = Math.floor(diffMs / 1000);
+    if (diffSecs < 60) return "just now";
+    const diffMins = Math.floor(diffSecs / 60);
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await apiFetch(`${API_URL}/api/dashboard/notifications`);
+      if (!res.ok) throw new Error("Failed to fetch notifications");
+      const data = await res.json();
+      
+      setNotifications((prev) => {
+        if (prev.length > 0 && data.length > 0) {
+          const prevLatestTime = new Date(prev[0].time).getTime();
+          const newLatestTime = new Date(data[0].time).getTime();
+          if (newLatestTime > prevLatestTime) {
+            const newItems = data.filter(
+              (item: any) => new Date(item.time).getTime() > prevLatestTime
+            );
+            setUnreadCount((c) => c + newItems.length);
+          }
+        } else if (prev.length === 0 && data.length > 0) {
+          setUnreadCount(data.length);
+        }
+        return data;
+      });
+    } catch (err) {
+      console.error("Notifications fetch error:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleDropdownOpenChange = (open: boolean) => {
+    if (open) {
+      setUnreadCount(0);
+    }
+  };
+
+  const refresh = async () => {
     setSpinning(true);
-    toast.success("Data synced", { description: "Latest metrics loaded" });
-    setTimeout(() => setSpinning(false), 800);
+    await fetchNotifications();
+    toast.success("Data synced", { description: "Latest notifications and metrics loaded" });
+    setSpinning(false);
   };
 
   return (
@@ -64,28 +123,40 @@ export default function AdminHeader({ onMenu }: { onMenu: () => void }) {
             <RefreshCw className={`w-[18px] h-[18px] text-muted-foreground ${spinning ? "animate-spin" : ""}`} />
           </button>
 
-          <DropdownMenu>
+          <DropdownMenu onOpenChange={handleDropdownOpenChange}>
             <DropdownMenuTrigger asChild>
               <button className="relative p-2.5 rounded-lg hover:bg-muted transition-smooth">
                 <Bell className="w-[18px] h-[18px] text-muted-foreground" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-destructive ring-2 ring-card" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-destructive ring-2 ring-card" />
+                )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-72 max-h-96 overflow-y-auto">
+              <DropdownMenuLabel className="flex justify-between items-center">
+                <span>Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="text-[10px] bg-destructive/15 text-destructive px-1.5 py-0.5 rounded-full font-medium">
+                    {unreadCount} new
+                  </span>
+                )}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex-col items-start gap-0.5 py-2">
-                <span className="text-sm font-medium">New order received</span>
-                <span className="text-xs text-muted-foreground">Order PNX-1042 · ₹385</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex-col items-start gap-0.5 py-2">
-                <span className="text-sm font-medium">User signed up</span>
-                <span className="text-xs text-muted-foreground">Kabir Singh joined · 1h ago</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex-col items-start gap-0.5 py-2">
-                <span className="text-sm font-medium">Reseller upgraded</span>
-                <span className="text-xs text-muted-foreground">Northstar Retail → Gold</span>
-              </DropdownMenuItem>
+              {notifications.length === 0 ? (
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  No new notifications
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <DropdownMenuItem key={n.id} className="flex-col items-start gap-0.5 py-2">
+                    <span className="text-sm font-medium">{n.title}</span>
+                    <span className="text-xs text-muted-foreground">{n.description}</span>
+                    <span className="text-[10px] text-muted-foreground/75 mt-0.5">
+                      {formatRelativeTime(n.time)}
+                    </span>
+                  </DropdownMenuItem>
+                ))
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 

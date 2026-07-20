@@ -18,6 +18,8 @@ import {
   Check,
   TrendingUp,
   Coins,
+  Trash2,
+  ChevronDown,
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
@@ -56,6 +58,7 @@ type Review = {
   rating: number;
   text: string;
   date: string;
+  user_email?: string;
 };
 
 const REVIEWS_KEY = (id: string) => `pantix:reviews:${id}`;
@@ -109,6 +112,15 @@ const ProductPage = () => {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [copied, setCopied] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editReviewRating, setEditReviewRating] = useState(5);
+  const [editReviewText, setEditReviewText] = useState("");
+  const avgRating = useMemo(() => {
+    if (reviews.length === 0) return 0;
+    const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+    return Number((sum / reviews.length).toFixed(1));
+  }, [reviews]);
   
   const currentStock = useMemo(() => {
     if (!product) return 0;
@@ -216,6 +228,7 @@ const ProductPage = () => {
             rating: Number(r.rating),
             text: r.text,
             date: r.date,
+            user_email: r.user_email,
           })));
         } else {
           setReviews(seedReviews(id));
@@ -312,10 +325,12 @@ const ProductPage = () => {
     if (!reviewName.trim() || !reviewText.trim()) return;
 
     try {
+      const token = localStorage.getItem("pantix_token");
       const res = await fetch(`${API_URL}/api/products/${product.id}/reviews`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           name: reviewName.trim(),
@@ -337,10 +352,84 @@ const ProductPage = () => {
       
       const newReviews = await fetch(`${API_URL}/api/products/${product.id}/reviews`);
       if (newReviews.ok) {
-        setReviews(await newReviews.json());
+        const data = await newReviews.json();
+        setReviews(data.map((r: any) => ({
+          id: String(r.id),
+          name: r.name,
+          rating: Number(r.rating),
+          text: r.text,
+          date: r.date,
+          user_email: r.user_email,
+        })));
       }
     } catch (err) {
       toast.error("Network error");
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!window.confirm("Are you sure you want to delete your review?")) return;
+    try {
+      const token = localStorage.getItem("pantix_token");
+      const res = await fetch(`${API_URL}/api/products/${product?.id}/reviews/${reviewId}`, {
+        method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        if (res.status === 404) {
+          setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+          toast.success("Review deleted! 🗑️");
+          return;
+        }
+        throw new Error(errorData.error || "Failed to delete review");
+      }
+
+      toast.success("Review deleted! 🗑️");
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    } catch (err: any) {
+      toast.error(err.message || "Could not delete review");
+    }
+  };
+
+  const handleUpdateReview = async (e: React.FormEvent, reviewId: string) => {
+    e.preventDefault();
+    if (!editReviewText.trim()) return;
+
+    try {
+      const token = localStorage.getItem("pantix_token");
+      const res = await fetch(`${API_URL}/api/products/${product?.id}/reviews/${reviewId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          rating: editReviewRating,
+          text: editReviewText.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update review");
+      }
+
+      const updated = await res.json();
+      toast.success("Review updated successfully! ✨");
+      setReviews((prev) =>
+        prev.map((r) =>
+          r.id === reviewId
+            ? { ...r, rating: Number(updated.rating), text: updated.text }
+            : r
+        )
+      );
+      setEditingReviewId(null);
+    } catch (err: any) {
+      toast.error(err.message || "Could not update review");
     }
   };
 
@@ -742,13 +831,41 @@ const ProductPage = () => {
                 Customer Reviews
               </h2>
               <div className="gold-divider mt-3 w-16" />
+              
+              {/* Cumulative Rating Summary */}
+              {reviews.length > 0 && (
+                <div className="flex items-center gap-2 mt-3 text-sm">
+                  <div className="flex items-center text-gold">
+                    {Array.from({ length: Math.round(avgRating) }).map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-current" />
+                    ))}
+                    {Array.from({ length: 5 - Math.round(avgRating) }).map((_, i) => (
+                      <Star key={i} className="h-4 w-4 text-gold/30" />
+                    ))}
+                  </div>
+                  <span className="font-semibold text-foreground">{avgRating} out of 5</span>
+                  <span className="text-muted-foreground">({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})</span>
+                </div>
+              )}
             </div>
-            <button
-              onClick={() => setShowForm((s) => !s)}
-              className="px-5 py-2.5 border border-gold/50 text-gold text-sm uppercase tracking-wide hover:bg-gold/10 rounded"
-            >
-              {showForm ? "Cancel" : "Add Review"}
-            </button>
+
+            <div className="flex gap-2">
+              {reviews.length > 0 && (
+                <button
+                  onClick={() => setShowAllReviews((s) => !s)}
+                  className="px-5 py-2.5 border border-gold/50 text-gold text-sm uppercase tracking-wide hover:bg-gold/10 rounded flex items-center gap-1.5"
+                >
+                  <span>{showAllReviews ? "Hide Reviews" : "View Reviews"}</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${showAllReviews ? 'rotate-180' : ''}`} />
+                </button>
+              )}
+              <button
+                onClick={() => setShowForm((s) => !s)}
+                className="px-5 py-2.5 border border-gold/50 text-gold text-sm uppercase tracking-wide hover:bg-gold/10 rounded"
+              >
+                {showForm ? "Cancel" : "Add Review"}
+              </button>
+            </div>
           </div>
 
           {showForm && (
@@ -813,36 +930,124 @@ const ProductPage = () => {
             </form>
           )}
 
-          <div className="mt-6 grid md:grid-cols-2 gap-6">
-            {reviews.map((r) => (
-              <div
-                key={r.id}
-                className="p-5 border border-gold/25 bg-card/60 rounded-sm"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: r.rating }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className="h-3.5 w-3.5 fill-[hsl(var(--gold))] text-[hsl(var(--gold))]"
-                      />
-                    ))}
+          {showAllReviews && reviews.length > 0 && (
+            <div className="mt-6 grid md:grid-cols-2 gap-6">
+              {reviews.map((r) => {
+                const isOwner = user && r.user_email && r.user_email.toLowerCase() === user.email.toLowerCase();
+                const isAdmin = user && ["admin", "Super Admin", "admin-user"].includes(user.role);
+
+                return (
+                  <div
+                    key={r.id}
+                    className="p-5 border border-gold/25 bg-card/60 rounded-sm flex flex-col justify-between"
+                  >
+                    <div>
+                    {editingReviewId === r.id ? (
+                      <form onSubmit={(e) => handleUpdateReview(e, r.id)} className="space-y-4">
+                        <div>
+                          <span className="text-[11px] uppercase tracking-[0.25em] text-gold font-semibold">
+                            Rating
+                          </span>
+                          <div className="mt-2 flex gap-1">
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <button
+                                key={n}
+                                type="button"
+                                onClick={() => setEditReviewRating(n)}
+                                aria-label={`Rate ${n} stars`}
+                              >
+                                <Star
+                                  className={`h-5 w-5 ${
+                                    n <= editReviewRating
+                                      ? "fill-[hsl(var(--gold))] text-[hsl(var(--gold))]"
+                                      : "text-gold/30"
+                                  }`}
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <textarea
+                          value={editReviewText}
+                          onChange={(e) => setEditReviewText(e.target.value)}
+                          rows={3}
+                          required
+                          className="w-full bg-transparent border border-gold/30 rounded p-2.5 text-sm text-foreground focus:outline-none focus:border-gold resize-none"
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setEditingReviewId(null)}
+                            className="px-3 py-1.5 border border-gold/50 text-gold text-xs uppercase tracking-wide hover:bg-gold/10 rounded"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-3 py-1.5 bg-gold text-primary-foreground uppercase text-xs font-semibold hover:bg-primary-glow shadow-gold"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: r.rating }).map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className="h-3.5 w-3.5 fill-[hsl(var(--gold))] text-[hsl(var(--gold))]"
+                                />
+                              ))}
+                            </div>
+                            <span className="text-[11px] text-muted-foreground">
+                              {new Date(r.date).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm text-foreground">"{r.text}"</p>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-4">
+                          <p className="text-xs text-gold/90 font-medium">
+                            — {r.name}
+                          </p>
+                          <div className="flex items-center gap-3">
+                            {user && isOwner && (
+                              <button
+                                onClick={() => {
+                                  setEditingReviewId(r.id);
+                                  setEditReviewRating(r.rating);
+                                  setEditReviewText(r.text);
+                                }}
+                                className="text-xs text-gold hover:text-primary-glow font-semibold uppercase tracking-wider transition-colors"
+                              >
+                                Edit
+                              </button>
+                            )}
+                            {user && (isOwner || isAdmin) && (
+                              <button
+                                onClick={() => handleDeleteReview(r.id)}
+                                className="text-xs text-destructive hover:text-red-400 font-semibold uppercase tracking-wider transition-colors flex items-center gap-1"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                <span>Delete</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <span className="text-[11px] text-muted-foreground">
-                    {new Date(r.date).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-foreground">"{r.text}"</p>
-                <p className="mt-2 text-xs text-gold/90 font-medium">
-                  — {r.name}
-                </p>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* Related */}

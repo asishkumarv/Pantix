@@ -43,6 +43,7 @@ export type User = {
   email: string;
   name: string;
   phone?: string;
+  role?: string;
   is_reseller?: boolean;
   reseller_status?: string;
   reseller_code?: string;

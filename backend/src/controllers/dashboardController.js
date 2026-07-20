@@ -136,3 +136,64 @@ export const getRevenueReport = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const getNotifications = async (req, res) => {
+  try {
+    // 1. Fetch recent orders
+    const ordersRes = await pool.query(
+      "SELECT id, total, date FROM orders ORDER BY date DESC LIMIT 5"
+    );
+    const orderNotifications = ordersRes.rows.map((row) => ({
+      id: `order-${row.id}`,
+      type: "order",
+      title: "New order received",
+      description: `Order ${row.id} · ₹${parseInt(row.total, 10)}`,
+      time: row.date,
+    }));
+
+    // 2. Fetch recent signups
+    const signupsRes = await pool.query(
+      "SELECT id, name, joined_at FROM users WHERE role = 'user' ORDER BY joined_at DESC LIMIT 5"
+    );
+    const signupNotifications = signupsRes.rows.map((row) => ({
+      id: `signup-${row.id}`,
+      type: "signup",
+      title: "User signed up",
+      description: `${row.name} joined`,
+      time: row.joined_at,
+    }));
+
+    // 3. Fetch recent reseller upgrades/requests
+    const resellersRes = await pool.query(
+      `SELECT id, name, is_reseller, reseller_status, joined_at 
+       FROM users 
+       WHERE is_reseller = TRUE OR reseller_status = 'Pending' 
+       ORDER BY joined_at DESC LIMIT 5`
+    );
+    const resellerNotifications = resellersRes.rows.map((row) => {
+      const isPending = row.reseller_status === "Pending";
+      return {
+        id: `reseller-${row.id}`,
+        type: "reseller",
+        title: isPending ? "Reseller requested" : "Reseller upgraded",
+        description: isPending 
+          ? `${row.name} requested reseller access`
+          : `${row.name} is active reseller`,
+        time: row.joined_at,
+      };
+    });
+
+    // 4. Combine and sort
+    const allNotifications = [
+      ...orderNotifications,
+      ...signupNotifications,
+      ...resellerNotifications,
+    ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+    // Take top 10
+    res.json(allNotifications.slice(0, 10));
+  } catch (err) {
+    console.error("GetNotifications error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
