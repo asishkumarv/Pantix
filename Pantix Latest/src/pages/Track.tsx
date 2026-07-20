@@ -11,6 +11,7 @@ type TrackOrder = {
   total: number;
   date: string;
   items: any[];
+  shipping_charge?: number;
   status_dates?: Record<string, string>;
 };
 
@@ -103,6 +104,7 @@ const Track = () => {
         total: Number(data.total || 0),
         date: data.date,
         items: typeof data.items === "string" ? (() => { try { return JSON.parse(data.items); } catch { return []; } })() : data.items || [],
+        shipping_charge: Number(data.shipping_charge || 0),
         status_dates: typeof data.status_dates === "string" ? (() => { try { return JSON.parse(data.status_dates); } catch { return {}; } })() : data.status_dates || {},
       });
     } catch (err: any) {
@@ -266,7 +268,7 @@ const Track = () => {
               <div className="flex justify-between text-muted-foreground">
                 <span>Shipping Charge</span>
                 <span className="text-foreground font-medium">
-                  {order.total >= 1000 ? "Free" : "₹150"}
+                  {order.shipping_charge === 0 ? "Free" : formatINR(order.shipping_charge || 0)}
                 </span>
               </div>
               <div className="flex justify-between border-t border-gold/15 pt-2 text-base font-semibold">

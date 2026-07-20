@@ -2,11 +2,17 @@ import pool from "../config/db.js";
 
 export const getStats = async (req, res) => {
   try {
-    // 1. Total Revenue (sum of all orders that are not cancelled)
+    // 1. Total Revenue (sum of all orders that are not cancelled, excluding shipping charges)
     const revResult = await pool.query(
-      "SELECT COALESCE(SUM(total), 0) as total FROM orders WHERE status != 'Cancelled'"
+      `SELECT 
+         COALESCE(SUM(o.total - COALESCE(osc.shipping_charge, 0.00)), 0) as prod_total,
+         COALESCE(SUM(osc.shipping_charge), 0) as ship_total
+       FROM orders o
+       LEFT JOIN order_shipping_charges osc ON o.id = osc.order_id
+       WHERE o.status != 'Cancelled'`
     );
-    const revenue = parseFloat(revResult.rows[0].total);
+    const revenue = parseFloat(revResult.rows[0].prod_total);
+    const shippingRevenue = parseFloat(revResult.rows[0].ship_total);
 
     // 2. Orders stats
     const orderResult = await pool.query(
@@ -62,6 +68,7 @@ export const getStats = async (req, res) => {
 
     res.json({
       revenue,
+      shippingRevenue,
       orders: ordersCount,
       pending: statusCounts.Ordered,
       ordered: statusCounts.Ordered,
@@ -96,7 +103,7 @@ export const getRevenueReport = async (req, res) => {
     const reportResult = await pool.query(`
       SELECT 
         TO_CHAR(series_date, $1) as day,
-        COALESCE(SUM(o.total), 0) as revenue,
+        COALESCE(SUM(o.total - COALESCE(osc.shipping_charge, 0.00)), 0) as revenue,
         COALESCE(COUNT(o.id), 0) as orders
       FROM (
         SELECT generate_series(
@@ -106,6 +113,7 @@ export const getRevenueReport = async (req, res) => {
         )::date as series_date
       ) s
       LEFT JOIN orders o ON DATE_TRUNC('day', o.date) = s.series_date AND o.status != 'Cancelled'
+      LEFT JOIN order_shipping_charges osc ON o.id = osc.order_id
       GROUP BY series_date, TO_CHAR(series_date, $1)
       ORDER BY series_date ASC
     `, [dateFormat, interval]);

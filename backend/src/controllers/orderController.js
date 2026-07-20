@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 
 export const getAllOrders = async (req, res) => {
   try {
-    let query = "SELECT o.*, osd.status_dates FROM orders o LEFT JOIN order_status_dates osd ON o.id = osd.order_id";
+    let query = "SELECT o.*, osd.status_dates, COALESCE(osc.shipping_charge, 0.00) as shipping_charge FROM orders o LEFT JOIN order_status_dates osd ON o.id = osd.order_id LEFT JOIN order_shipping_charges osc ON o.id = osc.order_id";
     const params = [];
 
     // If user is not admin, only return their own orders
@@ -30,7 +30,7 @@ export const getOrderById = async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
-      "SELECT o.*, osd.status_dates FROM orders o LEFT JOIN order_status_dates osd ON o.id = osd.order_id WHERE o.id = $1",
+      "SELECT o.*, osd.status_dates, COALESCE(osc.shipping_charge, 0.00) as shipping_charge FROM orders o LEFT JOIN order_status_dates osd ON o.id = osd.order_id LEFT JOIN order_shipping_charges osc ON o.id = osc.order_id WHERE o.id = $1",
       [id]
     );
     if (result.rows.length === 0) {
@@ -72,6 +72,8 @@ export const getOrderById = async (req, res) => {
       status: order.status,
       total: order.total,
       date: order.date,
+      items: typeof order.items === "string" ? JSON.parse(order.items) : order.items,
+      shipping_charge: parseFloat(order.shipping_charge || 0),
       status_dates: order.status_dates,
     });
   } catch (err) {
@@ -81,7 +83,7 @@ export const getOrderById = async (req, res) => {
 };
 
 export const createOrder = async (req, res) => {
-  const { items, total, payment, address, reseller_code } = req.body;
+  const { items, total, payment, address, reseller_code, shipping_charge } = req.body;
 
   if (!items || !total) {
     return res.status(400).json({ error: "Items and total are required" });
@@ -135,6 +137,13 @@ export const createOrder = async (req, res) => {
       `INSERT INTO order_status_dates (order_id, status_dates)
        VALUES ($1, $2)`,
       [id, JSON.stringify({ Ordered: timestamp })]
+    );
+
+    const shippingChargeVal = shipping_charge !== undefined ? parseFloat(shipping_charge) : 0.00;
+    await client.query(
+      `INSERT INTO order_shipping_charges (order_id, shipping_charge)
+       VALUES ($1, $2)`,
+      [id, shippingChargeVal]
     );
 
     // Decrement stock for each item based on color and size
@@ -224,6 +233,7 @@ export const createOrder = async (req, res) => {
     await client.query('COMMIT');
     const orderData = result.rows[0];
     orderData.status_dates = { Ordered: timestamp };
+    orderData.shipping_charge = shippingChargeVal;
     res.status(201).json(orderData);
   } catch (err) {
     await client.query('ROLLBACK');

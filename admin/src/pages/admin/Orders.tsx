@@ -25,6 +25,7 @@ type ApiOrder = {
   date: string;
   items: unknown[];
   total: number;
+  shipping_charge?: number;
   payment: PaymentStatus;
   status: OrderStatus;
   address?: any;
@@ -265,7 +266,7 @@ export default function Orders() {
       {/* Order Details Modal */}
       <Dialog open={selectedOrder !== null} onOpenChange={(open) => !open && setSelectedOrder(null)}>
         {selectedOrder && (
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center justify-between">
                 <span>Order Details</span>
@@ -283,7 +284,7 @@ export default function Orders() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
               {/* Left Column: Customer & Shipping Details */}
               <div className="space-y-4">
                 <div>
@@ -310,7 +311,7 @@ export default function Orders() {
                 </div>
               </div>
 
-              {/* Right Column: Status Controls & Summary */}
+              {/* Middle Column: Status & Payment Method */}
               <div className="space-y-4">
                 <div>
                   <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Payment Method</h4>
@@ -350,10 +351,35 @@ export default function Orders() {
                     </select>
                   </div>
                 </div>
+              </div>
 
-                <div>
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Grand Total</h4>
-                  <p className="text-lg font-bold text-primary">₹{Number(selectedOrder.total).toLocaleString()}</p>
+              {/* Right Column: Order Summary */}
+              <div>
+                <div className="space-y-2 border border-border bg-muted/20 p-3.5 rounded-md">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Order Summary</h4>
+                  
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Item Amount:</span>
+                    <span className="font-semibold text-foreground">
+                      ₹{(() => {
+                        const items = typeof selectedOrder.items === 'string' ? (() => { try { return JSON.parse(selectedOrder.items); } catch { return []; } })() : selectedOrder.items || [];
+                        const sub = items.reduce((acc: number, item: any) => acc + (Number(item.price || 0) * (item.qty || item.quantity || 1)), 0);
+                        return sub.toLocaleString();
+                      })()}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Shipping:</span>
+                    <span className={Number(selectedOrder.shipping_charge || 0) === 0 ? "font-semibold text-emerald-500" : "font-semibold text-foreground"}>
+                      {Number(selectedOrder.shipping_charge || 0) === 0 ? "Free" : `₹${Number(selectedOrder.shipping_charge).toLocaleString()}`}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-xs border-t border-border pt-1.5 font-bold text-foreground">
+                    <span>Total Collected:</span>
+                    <span className="text-primary text-sm">₹{Number(selectedOrder.total).toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
             </div>

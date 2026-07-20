@@ -185,7 +185,7 @@ export function ProfileTab({
 export function OrdersTab({
   orders,
 }: {
-  orders: { id: string; date: string; total: number; status: string; items?: any[] }[];
+  orders: { id: string; date: string; total: number; shipping_charge: number; status: string; items?: any[] }[];
 }) {
   const { user, enableReseller, getProduct } = useStore();
   const navigate = useNavigate();
@@ -265,9 +265,17 @@ export function OrdersTab({
                       <p className="font-medium text-foreground text-base truncate pr-2">
                         Order #{o.id}
                       </p>
-                      <p className="text-gold font-medium whitespace-nowrap">
-                        {formatINR(o.total)}
-                      </p>
+                      <div className="text-right shrink-0">
+                        <p className="text-gold font-medium whitespace-nowrap">
+                          {formatINR(o.total)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {o.shipping_charge > 0 
+                            ? `${formatINR(o.total - o.shipping_charge)} + ${formatINR(o.shipping_charge)} shipping`
+                            : `${formatINR(o.total)} (Free shipping)`
+                          }
+                        </p>
+                      </div>
                     </div>
 
                     {firstItem && (

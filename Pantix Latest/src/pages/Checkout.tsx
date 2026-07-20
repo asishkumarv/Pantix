@@ -193,7 +193,7 @@ const Checkout = () => {
     })
     .filter((i): i is typeof i & { product: NonNullable<typeof i["product"]> } => Boolean(i));
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0);
-  const shipping = 0;
+  const shipping = subtotal >= 1000 ? 0 : 49;
   const total = subtotal + shipping;
 
   if (items.length === 0 && step !== 4) {
@@ -397,6 +397,7 @@ const Checkout = () => {
           address: payment === "online" && txnId ? { ...address, transaction_id: txnId } : address,
           reseller_code: resellerCode || null,
           reseller_commission: resellerCommission || 0,
+          shipping_charge: shipping,
         }),
       });
 
@@ -619,12 +620,12 @@ const Checkout = () => {
                     title="Online Payment"
                     desc="UPI · Cards · Net Banking · Wallets"
                   />
-                  {/* <PayOption
+                   <PayOption
                     active={payment === "cod"}
                     onClick={() => setPayment("cod")}
                     title="Cash on Delivery"
                     desc="Pay when you receive your order"
-                  /> */}
+                  />
                 </div>
                 <div className="mt-6 flex gap-3">
                   <button
@@ -751,14 +752,23 @@ const Checkout = () => {
                   );
                 })}
               </ul>
+
+              {subtotal < 1000 && (
+                <div className="mt-4 p-3 bg-gold/10 border border-gold/30 text-xs text-gold rounded text-center font-medium font-sans">
+                  Shop <span className="font-bold text-amber-500">{formatINR(1000 - subtotal)}</span> more to get <span className="font-bold text-emerald-500">Free Shipping</span>!
+                </div>
+              )}
+
               <div className="mt-5 pt-4 border-t border-gold/15 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>{formatINR(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span>{shipping === 0 ? "Free" : formatINR(shipping)}</span>
+                  <span className="text-muted-foreground">Shipping Charges</span>
+                  <span className={shipping === 0 ? "text-emerald-500 font-medium" : ""}>
+                    {shipping === 0 ? "Free" : formatINR(shipping)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-base pt-2 border-t border-gold/15">
                   <span className="text-foreground font-medium">Total</span>

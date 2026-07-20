@@ -101,6 +101,7 @@ export default function OrderDetails() {
             id: o.id,
             date: o.date,
             total: Number(o.total || 0),
+            shipping_charge: Number(o.shipping_charge || 0),
             status: o.status,
             address: typeof o.address === "string" ? (() => { try { return JSON.parse(o.address); } catch { return o.address; } })() : o.address,
             items: typeof o.items === "string" ? (() => { try { return JSON.parse(o.items); } catch { return []; } })() : o.items || [],
@@ -229,9 +230,20 @@ export default function OrderDetails() {
                   <span>{formatINR(Number(item.price || 0) * (item.qty || item.quantity || 1))}</span>
                 </div>
               ))}
-              <div className="border-t border-gold/15 pt-2 flex justify-between font-semibold text-base text-foreground mt-2">
+              
+              <div className="border-t border-gold/15 pt-2 flex justify-between text-muted-foreground">
+                <span>Subtotal</span>
+                <span>{formatINR(order.items?.reduce((acc: number, item: any) => acc + Number(item.price || 0) * (item.qty || item.quantity || 1), 0) || 0)}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Shipping Charges</span>
+                <span className={order.shipping_charge === 0 ? "text-emerald-500 font-medium" : ""}>
+                  {order.shipping_charge === 0 ? "Free" : formatINR(order.shipping_charge || 0)}
+                </span>
+              </div>
+              <div className="border-t border-gold/15 pt-2 flex justify-between font-semibold text-base text-gold mt-2">
                 <span>Total Order Price</span>
-                <span className="text-gold">{formatINR(order.total)}</span>
+                <span>{formatINR(order.total)}</span>
               </div>
             </div>
           </div>

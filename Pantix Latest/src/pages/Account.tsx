@@ -38,7 +38,7 @@ const Account = () => {
     addAddress,
     removeAddress,
   } = useStore();
-  const [orders, setOrders] = useState<{ id: string; date: string; total: number; status: string; items?: any[] }[]>([]);
+  const [orders, setOrders] = useState<{ id: string; date: string; total: number; shipping_charge: number; status: string; items?: any[] }[]>([]);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -85,6 +85,7 @@ const Account = () => {
             id: o.id,
             date: o.date,
             total: Number(o.total || 0),
+            shipping_charge: Number(o.shipping_charge || 0),
             status: o.status,
             items: typeof o.items === "string" ? (() => { try { return JSON.parse(o.items); } catch { return []; } })() : o.items || [],
           }))

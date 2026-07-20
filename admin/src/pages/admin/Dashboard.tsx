@@ -73,8 +73,8 @@ export default function Dashboard() {
 
     // KPI Summary
     lines.push("KPI OVERVIEW");
-    lines.push("Total Revenue,Total Orders,Delivered Orders,Total Users,Total Resellers,Total Products");
-    lines.push(`₹${stats.revenue},${stats.orders},${stats.delivered},${stats.users},${stats.resellers},${stats.products}`);
+    lines.push("Total Revenue,Shipping Charges,Total Orders,Delivered Orders,Total Users,Total Resellers,Total Products");
+    lines.push(`₹${stats.revenue},₹${stats.shippingRevenue || 0},${stats.orders},${stats.delivered},${stats.users},${stats.resellers},${stats.products}`);
     lines.push("");
 
     // Chart Series
@@ -165,6 +165,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
         <StatCard label="Total Revenue" value={`₹${stats.revenue}`} subtext="Today" icon={Wallet}
           tint="green" delta={12.4} spark={sparkData} />
+        <StatCard label="Shipping Collected" value={`₹${stats.shippingRevenue || 0}`} subtext="Collected separately" icon={Truck}
+          tint="blue" delta={0} spark={sparkData} />
         <StatCard label="Total Orders" value={stats.orders} subtext={`Pending: ${stats.pending}`} icon={ShoppingCart}
           tint="blue" delta={8.2} spark={orderSparkData} />
         <StatCard label="Delivered Orders" value={stats.delivered} subtext={`Shipped: ${stats.shipped}`} icon={Truck}
