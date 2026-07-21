@@ -1,0 +1,62 @@
+PANTIX E-COMMERCE STORE - PRODUCT POSTING & IMAGE UPLOAD GUIDELINES
+
+This document serves as the guide for store managers/clients to upload products and images perfectly onto the Pantix administration dashboard.
+
+========================================================================
+1. BASIC PRODUCT INFORMATION
+========================================================================
+* Product Name: Use a clean, appealing name (e.g., "Emerald Zari Kurta Set").
+* Description: Write details about the fabric, materials, design, and wash care.
+* SKU (Required): Enter a unique code (e.g., "SKU-EMERALD-ZARI").
+  - Note: Customers can search by entering the SKU in the search bar, but the SKU itself is hidden from all customer listings/pages.
+* Badge: Optional. Add tags like "Bestseller", "New", or "Bridal" to show a gold badge over the image.
+
+========================================================================
+2. SIZING & INVENTORY CONFIGURATION
+========================================================================
+Depending on whether the product has different color choices, follow one of the methods below:
+
+OPTION A: Simple Product (Single Color / No Color Variants)
+1. Clear/remove all color variants from the bottom section.
+2. Select the available sizes from the "Available Sizes" checklists. The sizes should be clearly specified (e.g., size name: "XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL", "6XL", or "Free Size").
+3. In the "Pricing & Inventory" panel, enter the exact stock quantity in the "Stock qty" input.
+
+OPTION B: Multi-Color Product (Recommended)
+1. Add a color variant for each color option.
+2. Select the hex color using the picker, and type the color name. The colour name should be clearly written (e.g., colourname: "Red", "Emerald Green", "Navy Blue", "Peach").
+3. For each color, check the available sizes and type the stock number for each size. The sizes should be clearly selected (e.g., size name: "XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL", "6XL", or "Free Size").
+4. Note: The main "Stock qty" input will lock and calculate automatically based on the sum of your size limits.
+
+========================================================================
+3. IMAGE UPLOAD & FORMAT GUIDELINES
+========================================================================
+* Accepted Formats: JPG, JPEG, PNG, WEBP.
+* Resolution Recommendation: For clean rendering, use vertical images with a 3:4 aspect ratio (e.g., 800 x 1067 pixels or 1200 x 1600 pixels). Keep file sizes under 2MB for fast loading times.
+* For Multi-Color Products: Always upload the images under the specific Color Variant section. Do NOT upload fallback images at the top.
+* For Simple Products: Upload the primary image and extra images in the fallback "Images" section at the top.
+
+How to add images:
+1. Upload File: Click "upload from computer" or "Or Upload File" to select a file directly from your device. Supported formats: .jpg, .jpeg, .png, .webp.
+2. Local Path: Type the name of a file located in the server's public folder (e.g., "product-saree-1.jpg").
+3. Web Link: Paste a full web URL starting with https://.
+
+Cover Image Logic:
+- The site automatically selects the first image of your first color variant as the main cover image in product grids.
+- When customers choose a color on the website, the slideshow will change to display only the images uploaded for that specific color.
+
+========================================================================
+4. PRICING & DEALS
+========================================================================
+* Price (INR): The final price customers pay.
+* MRP (INR): The original price. Ensure the MRP is higher than or equal to the Price. The system will display the discount percentage automatically (e.g., "30% off").
+* Commission Rate: Optional. The percentage of the sale price given to resellers (e.g., enter "10" for 10%).
+
+========================================================================
+5. CATEGORIES & SHOP SECTIONS
+========================================================================
+* Category: Select the matching category from the list.
+* Category Label: The display name shown in filters (e.g., "3 Piece Kurta Sets (M-XXL)").
+* Status (Active): Switch ON to publish instantly. Switch OFF to save as Draft.
+* Collections:
+  - Budget Collection: Switch ON to show the product under the "Under 999" budget section.
+  - Popular Collection: Switch ON to show the product under the "Best Sellers" section.

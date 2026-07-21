@@ -15,6 +15,46 @@ import { TOKEN_KEY, apiFetch } from "@/lib/apiFetch";
 
 const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL", "6XL", "Free Size"];
 
+interface FileImagePreviewProps {
+  file: File | null;
+  fallbackUrl: string;
+  getPreviewImage: (img: string) => string;
+  className?: string;
+}
+
+function FileImagePreview({ file, fallbackUrl, getPreviewImage, className = "max-w-full max-h-full object-contain rounded" }: FileImagePreviewProps) {
+  const [preview, setPreview] = useState("");
+
+  useEffect(() => {
+    if (file) {
+      const objectUrl = URL.createObjectURL(file);
+      setPreview(objectUrl);
+      return () => {
+        URL.revokeObjectURL(objectUrl);
+      };
+    } else if (fallbackUrl) {
+      setPreview(getPreviewImage(fallbackUrl));
+    } else {
+      setPreview("");
+    }
+  }, [file, fallbackUrl, getPreviewImage]);
+
+  if (!preview) {
+    return <span className="text-[10px] text-muted-foreground/80">No image</span>;
+  }
+
+  return (
+    <img
+      src={preview}
+      alt="Preview"
+      className={className}
+      onError={(e) => {
+        (e.target as HTMLImageElement).style.display = "none";
+      }}
+    />
+  );
+}
+
 export default function AddProduct() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -476,15 +516,12 @@ export default function AddProduct() {
                       
                       {/* Preview box */}
                       <div className="flex items-center justify-center border border-border/60 rounded-lg bg-card/60 p-1 w-full h-[88px] overflow-hidden shrink-0">
-                        {item.file || item.url ? (
-                          <img
-                            src={item.file ? URL.createObjectURL(item.file) : getPreviewImage(item.url)}
-                            alt={`Preview #${i + 1}`}
-                            className="max-w-full max-h-full object-contain rounded"
-                          />
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground/80 text-center">No image</span>
-                        )}
+                        <FileImagePreview
+                          file={item.file}
+                          fallbackUrl={item.url}
+                          getPreviewImage={getPreviewImage}
+                          className="max-w-full max-h-full object-contain rounded"
+                        />
                       </div>
                     </div>
                   </div>
@@ -647,7 +684,6 @@ export default function AddProduct() {
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Color Specific Images (Images shown when selected)</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {(c.images || []).map((imgItem, imgIdx) => {
-                      const src = imgItem.file ? URL.createObjectURL(imgItem.file) : getPreviewImage(imgItem.url);
                       return (
                         <div key={imgItem.id} className="p-3.5 border border-border/40 rounded-2xl bg-card/40 flex flex-col gap-2 relative shadow-inner">
                           <div className="flex justify-between items-center">
@@ -702,11 +738,12 @@ export default function AddProduct() {
                           </div>
 
                           <div className="flex items-center justify-center border border-border/30 rounded-xl bg-background/50 p-1 h-24 overflow-hidden mt-1 shadow-inner">
-                            {src ? (
-                              <img src={src} alt="Preview" className="max-w-full max-h-full object-contain rounded-lg" />
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground/80">No image</span>
-                            )}
+                            <FileImagePreview
+                              file={imgItem.file}
+                              fallbackUrl={imgItem.url}
+                              getPreviewImage={getPreviewImage}
+                              className="max-w-full max-h-full object-contain rounded-lg"
+                            />
                           </div>
                         </div>
                       );
