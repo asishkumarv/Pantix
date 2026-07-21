@@ -282,6 +282,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         isBudget: p.is_budget === true || p.is_budget === "true",
         isPopular: p.is_popular === true || p.is_popular === "true",
         commission_rate: Number(p.commission_rate) || 0,
+        sku: p.sku || undefined,
       };
     });
 

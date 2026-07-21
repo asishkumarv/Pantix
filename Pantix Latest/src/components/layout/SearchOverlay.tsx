@@ -44,7 +44,8 @@ export function SearchOverlay({
         (p) =>
           p.name.toLowerCase().includes(q) ||
           p.categoryLabel.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q)
+          p.description.toLowerCase().includes(q) ||
+          (p.sku && p.sku.toLowerCase().includes(q))
       )
       .slice(0, 8);
   }, [query, products]);

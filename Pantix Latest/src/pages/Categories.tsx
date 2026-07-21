@@ -2,6 +2,8 @@ import { API_URL } from "@/api";
 import { Link } from "@/lib/router-compat";
 import { Layout } from "@/components/Layout";
 import { useStore } from "@/lib/store";
+import { imageByName } from "@/lib/products";
+
 
 type ApiCategory = {
   id: string;

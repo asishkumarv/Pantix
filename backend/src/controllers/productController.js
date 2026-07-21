@@ -17,7 +17,7 @@ export const getAllProducts = async (req, res) => {
     if (search) {
       params.push(`%${search}%`);
       conditions.push(
-        `(name ILIKE $${params.length} OR description ILIKE $${params.length})`
+        `(name ILIKE $${params.length} OR description ILIKE $${params.length} OR sku ILIKE $${params.length})`
       );
     }
 

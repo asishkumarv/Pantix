@@ -49,6 +49,7 @@ export type Product = {
   isBudget?: boolean;
   isPopular?: boolean;
   commission_rate?: number;
+  sku?: string;
 };
 
 export const categories: { id: Category; label: string; image: string }[] = [
