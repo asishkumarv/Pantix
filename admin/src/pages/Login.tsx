@@ -14,8 +14,8 @@ export default function Login() {
   const location = useLocation();
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? "/";
 
-  const [email, setEmail] = useState("admin@pantix.in");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -91,11 +91,6 @@ export default function Login() {
           <h2 className="text-3xl font-bold tracking-tight">Welcome back 👋</h2>
           <p className="mt-2 text-muted-foreground">Sign in to your admin dashboard.</p>
 
-          <div className="mt-6 p-3 rounded-lg bg-accent/60 border border-border text-xs">
-            <span className="font-semibold text-accent-foreground">Demo credentials:</span>{" "}
-            <code className="font-mono">admin@pantix.in</code> / <code className="font-mono">admin123</code>
-          </div>
-
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -137,10 +132,6 @@ export default function Login() {
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign in to dashboard"}
             </Button>
           </form>
-
-          <p className="mt-8 text-center text-xs text-muted-foreground">
-            Protected demo environment · UI-only authentication
-          </p>
         </div>
       </div>
 

@@ -243,8 +243,7 @@ export const forgotPassword = async (req, res) => {
     const emailLower = email.toLowerCase();
     const userCheck = await pool.query("SELECT id, name FROM users WHERE email = $1", [emailLower]);
     if (userCheck.rows.length === 0) {
-      // Return 200 even if not found to prevent email enumeration
-      return res.json({ success: true, message: "If the email exists, an OTP has been sent." });
+      return res.status(400).json({ error: "Account does not exist" });
     }
 
     const user = userCheck.rows[0];
