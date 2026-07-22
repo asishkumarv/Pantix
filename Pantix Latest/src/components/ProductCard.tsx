@@ -1,5 +1,5 @@
 import { Link } from "@/lib/router-compat";
-import { Heart, ShoppingBag, Trash2 } from "lucide-react";
+import { Heart, ShoppingBag, Trash2, Truck } from "lucide-react";
 import type { Product } from "@/lib/products";
 import { formatINR, useStore } from "@/lib/store";
 import { motion } from "framer-motion";
@@ -109,6 +109,10 @@ export function ProductCard({
         </h3>
         <p className="text-[11px] uppercase tracking-[0.2em] text-gold/70 mt-0.5">
           {product.categoryLabel}
+        </p>
+        <p className="text-[10px] text-muted-foreground/80 mt-1 flex items-center gap-1">
+          <Truck className="h-3.5 w-3.5 text-gold/70 shrink-0" />
+          <span>Expected delivery within 7 days</span>
         </p>
         <div className="mt-1.5 flex items-center justify-between gap-2">
           <div className="flex items-baseline gap-x-2 gap-y-0.5 flex-wrap min-w-0">

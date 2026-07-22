@@ -185,7 +185,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     let rawCategories: any[] = [];
     
     try {
-      const prodRes = await fetch(`${API_BASE_URL}/api/products`);
+      const prodRes = await fetch(`${API_BASE_URL}/api/products?status=Active`);
       if (prodRes.ok) {
         rawProducts = await prodRes.json();
       } else {
@@ -240,7 +240,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
 
     // 2. Process and map Products
-    const mappedProds = rawProducts.map((p: any): Product => {
+    const mappedProds = rawProducts
+      .filter((p: any) => p.status === undefined || p.status === "Active")
+      .map((p: any): Product => {
       let parsedColors = p.colors;
       if (typeof p.colors === "string") {
         try {
